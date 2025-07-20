@@ -1,11 +1,11 @@
-# <img src="/static/favicon.ico" alt="Smart Finance Logo" width="32" height="32"> Smart Finance
+# <img src="/static/favicon.ico" alt="Smart Finance Logo" width="28" height="28"> Smart Finance
 
 ![Python](https://img.shields.io/badge/python-3.11-blue.svg)
 ![Flask](https://img.shields.io/badge/flask-2.2-green.svg)
 ![PostgreSQL](https://img.shields.io/badge/postgresql-14-blue.svg)
 ![Bootstrap](https://img.shields.io/badge/bootstrap-5-purple.svg)
 
-**Smart Finance** é uma aplicação web simples e prática para o controle de uma loja de celulares, com foco em gestão de produtos, controle de estoque e relatórios financeiros.
+**Smart Finance** é uma aplicação web simples e prática para o controle financeiro de loja, com foco em gestão de produtos, controle de estoque e relatórios financeiros.
 
 ## ✨ Funcionalidades
 
