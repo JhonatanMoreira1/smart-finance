@@ -1,0 +1,35 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+  <h1>Bem-vindo ao Smart Finance</h1>
+  <p>Seu sistema de controle de loja de celulares.</p>
+
+  <div class="mt-4">
+    <h2>Gerenciamento do Banco de Dados</h2>
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Backup do Banco de Dados</h5>
+            <p class="card-text">Gere um arquivo de backup (.sql) do seu banco de dados atual.</p>
+            <a href="{{ url_for('backup_database') }}" class="btn btn-primary">Fazer Backup</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Restaurar Banco de Dados</h5>
+            <p class="card-text">Faça upload de um arquivo .sql para restaurar o banco de dados.</p>
+            <form action="{{ url_for('restore_database') }}" method="post" enctype="multipart/form-data">
+              <div class="mb-3">
+                <input class="form-control" type="file" id="backup_file" name="backup_file" accept=".sql">
+              </div>
+              <button type="submit" class="btn btn-warning">Restaurar</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

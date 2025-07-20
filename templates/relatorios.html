@@ -1,0 +1,48 @@
+
+{% extends 'layout.html' %}
+
+{% block content %}
+  <h1>Relatório Mensal</h1>
+
+  <form class="row g-3 mb-4">
+    <div class="col-md-4">
+      <label for="mes" class="form-label">Mês</label>
+      <input type="number" class="form-control" id="mes" name="mes" value="{{ mes }}">
+    </div>
+    <div class="col-md-4">
+      <label for="ano" class="form-label">Ano</label>
+      <input type="number" class="form-control" id="ano" name="ano" value="{{ ano }}">
+    </div>
+    <div class="col-md-4 d-flex align-items-end">
+      <button type="submit" class="btn btn-primary">Filtrar</button>
+    </div>
+  </form>
+
+  <div class="row">
+    <div class="col-md-4">
+      <div class="card text-white bg-success mb-3">
+        <div class="card-header">Receita Total</div>
+        <div class="card-body">
+          <h5 class="card-title">R$ {{ receita_total|round(2) }}</h5>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-white bg-danger mb-3">
+        <div class="card-header">Custo Total</div>
+        <div class="card-body">
+          <h5 class="card-title">R$ {{ custo_total|round(2) }}</h5>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-white bg-info mb-3">
+        <div class="card-header">Lucro</div>
+        <div class="card-body">
+          <h5 class="card-title">R$ {{ lucro|round(2) }}</h5>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}

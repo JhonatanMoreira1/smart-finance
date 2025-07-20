@@ -1,0 +1,73 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<h1>Entradas</h1>
+<!-- Botão para acionar o modal -->
+<button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addEntradaModal">
+  Adicionar Nova
+</button>
+
+<!-- Modal -->
+<div class="modal fade" id="addEntradaModal" tabindex="-1" aria-labelledby="addEntradaModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addEntradaModalLabel">Adicionar Nova Entrada</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form action="{{ url_for('entradas') }}" method="post">
+          <div class="mb-3">
+            <label for="produto_id" class="form-label">Produto</label>
+            <select class="form-select" id="produto_id" name="produto_id" required>
+              {% for produto in produtos %}
+              <option value="{{ produto.id }}">{{ produto.nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="quantidade" class="form-label">Quantidade</label>
+            <input type="number" class="form-control" id="quantidade" name="quantidade" required>
+          </div>
+          <div class="mb-3">
+            <label for="custo_unitario" class="form-label">Custo Unitário</label>
+            <input type="number" step="0.01" class="form-control" id="custo_unitario" name="custo_unitario" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Data</th>
+      <th>Produto</th>
+      <th>Quantidade</th>
+      <th>Custo Unitário</th>
+      <th>Custo Total</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for entrada in entradas %}
+    <tr>
+      <td>{{ entrada.produto.id }}</td>
+      <td>{{ entrada.data.strftime('%d/%m/%Y %H:%M') }}</td>
+      <td>{{ entrada.produto.nome }}</td>
+      <td>{{ entrada.quantidade }}</td>
+      <td>{{ entrada.custo_unitario }}</td>
+      <td>{{ entrada.total_custo }}</td>
+      <td>
+        <form action="{{ url_for('delete_entrada', id=entrada.id) }}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja deletar esta entrada? Isso afetará o estoque do produto.');">
+          <button type="submit" class="btn btn-danger btn-sm">Deletar</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
