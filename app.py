@@ -1,6 +1,6 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file
-from sqlalchemy import extract
+from sqlalchemy import extract, text
 from datetime import datetime
 from models import db, Produto, Entrada, Saida
 from dotenv import load_dotenv
@@ -175,9 +175,24 @@ def delete_produto(id):
         flash('Existem entradas e/ou saídas desse produto, exclua-as para continuar.', 'danger')
         return redirect(url_for('produtos'))
 
+    # Verifica se este é o último produto
+    is_last_product = Produto.query.count() == 1
+
     db.session.delete(produto)
     db.session.commit()
-    flash('Produto deletado com sucesso!', 'success')
+
+    # Se era o último produto, reseta a sequência de IDs
+    if is_last_product:
+        try:
+            # O nome da sequência geralmente é <nome_tabela>_<nome_coluna>_seq
+            db.session.execute(text('ALTER SEQUENCE produtos_id_seq RESTART WITH 1'))
+            db.session.commit()
+            flash('Produto deletado e sequência de IDs reiniciada.', 'success')
+        except Exception as e:
+            flash(f'Produto deletado, mas falha ao reiniciar a sequência de IDs: {e}', 'warning')
+    else:
+        flash('Produto deletado com sucesso!', 'success')
+
     return redirect(url_for('produtos'))
 
 @app.route('/delete_entrada/<int:id>', methods=['POST'])
@@ -337,4 +352,3 @@ def restore_database():
 if __name__ == "__main__":
       port = int(os.environ.get("PORT", 5000))
       app.run(host="0.0.0.0", port=port)
-
