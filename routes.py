@@ -109,7 +109,8 @@ def relatorios():
     else:
         dia = request.args.get('dia', type=int)
         if not dia or dia < 1 or dia > 31:
-            dia = None
+            dia = now.day  # define o dia atual como fallback
+
 
     # Filtros e dados
     filtros_saida = filtros_data(Saida, 'data', dia, mes, ano)
