@@ -2,6 +2,7 @@
 
 {% block content %}
 <h1>Saídas</h1>
+
 <!-- Botão para acionar o modal -->
 <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addSaidaModal">
   Adicionar Nova
@@ -16,10 +17,10 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <form action="{{ url_for('saidas') }}" method="post">
+        <form action="{{ url_for('main.saidas') }}" method="post">
           <div class="mb-3">
             <label for="produto_id" class="form-label">Produto</label>
-            <select class="form-select" id="produto_id" name="produto_id" required>
+            <select class="form-select" id="produto_id_saida" name="produto_id" required>
               {% for produto in produtos %}
               <option value="{{ produto.id }}">{{ produto.nome }}</option>
               {% endfor %}
@@ -48,6 +49,14 @@
   </div>
 </div>
 
+<script>
+  $('#addSaidaModal').on('shown.bs.modal', function () {
+      $('#produto_id_saida').select2({
+          dropdownParent: $('#addSaidaModal')
+      });
+  });
+</script>
+
 <table class="table">
   <thead>
     <tr>
@@ -74,11 +83,51 @@
       <td>{{ saida.forma_pagamento }}</td>
       <td>{{ saida.cliente }}</td>
       <td>
-        <form action="{{ url_for('delete_saida', id=saida.id) }}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja deletar esta saída? Isso afetará o estoque do produto.');">
+        <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editSaidaModal{{ saida.id }}">
+          Editar
+        </button>
+        <form action="{{ url_for('main.delete_saida', id=saida.id) }}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja deletar esta saída? Isso afetará o estoque do produto.');">
           <button type="submit" class="btn btn-danger btn-sm">Deletar</button>
         </form>
       </td>
     </tr>
+
+    <!-- Modal de Edição -->
+    <div class="modal fade" id="editSaidaModal{{ saida.id }}" tabindex="-1" aria-labelledby="editSaidaModalLabel{{ saida.id }}" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editSaidaModalLabel{{ saida.id }}">Editar Saída</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form action="{{ url_for('main.edit_saida', id=saida.id) }}" method="post">
+              <div class="mb-3">
+                <label class="form-label">Produto</label>
+                <input type="text" class="form-control" value="{{ saida.produto.nome }}" readonly>
+              </div>
+              <div class="mb-3">
+                <label for="quantidade" class="form-label">Quantidade</label>
+                <input type="number" class="form-control" name="quantidade" value="{{ saida.quantidade }}" required>
+              </div>
+              <div class="mb-3">
+                <label for="preco_unitario" class="form-label">Preço Unitário</label>
+                <input type="number" step="0.01" class="form-control" name="preco_unitario" value="{{ saida.preco_unitario }}" required>
+              </div>
+              <div class="mb-3">
+                <label for="forma_pagamento" class="form-label">Forma de Pagamento</label>
+                <input type="text" class="form-control" name="forma_pagamento" value="{{ saida.forma_pagamento }}">
+              </div>
+              <div class="mb-3">
+                <label for="cliente" class="form-label">Cliente</label>
+                <input type="text" class="form-control" name="cliente" value="{{ saida.cliente }}">
+              </div>
+              <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
     {% endfor %}
   </tbody>
 </table>

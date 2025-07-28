@@ -2,6 +2,18 @@
 
 {% block content %}
 <h1>Entradas</h1>
+
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card text-white bg-secondary mb-3">
+      <div class="card-header">Valor Total Gasto com Reposições (Mês Atual)</div>
+      <div class="card-body">
+        <h5 class="card-title">R$ {{ valor_gasto_reposicoes|round(2) }}</h5>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Botão para acionar o modal -->
 <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addEntradaModal">
   Adicionar Nova
@@ -16,10 +28,10 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <form action="{{ url_for('entradas') }}" method="post">
+        <form action="{{ url_for('main.entradas') }}" method="post">
           <div class="mb-3">
             <label for="produto_id" class="form-label">Produto</label>
-            <select class="form-select" id="produto_id" name="produto_id" required>
+            <select class="form-select" id="produto_id_entrada" name="produto_id" required>
               {% for produto in produtos %}
               <option value="{{ produto.id }}">{{ produto.nome }}</option>
               {% endfor %}
@@ -39,6 +51,14 @@
     </div>
   </div>
 </div>
+
+<script>
+  $('#addEntradaModal').on('shown.bs.modal', function () {
+      $('#produto_id_entrada').select2({
+          dropdownParent: $('#addEntradaModal')
+      });
+  });
+</script>
 
 <table class="table">
   <thead>
@@ -62,11 +82,43 @@
       <td>{{ entrada.custo_unitario }}</td>
       <td>{{ entrada.total_custo }}</td>
       <td>
-        <form action="{{ url_for('delete_entrada', id=entrada.id) }}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja deletar esta entrada? Isso afetará o estoque do produto.');">
+        <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editEntradaModal{{ entrada.id }}">
+          Editar
+        </button>
+        <form action="{{ url_for('main.delete_entrada', id=entrada.id) }}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja deletar esta entrada? Isso afetará o estoque do produto.');">
           <button type="submit" class="btn btn-danger btn-sm">Deletar</button>
         </form>
       </td>
     </tr>
+
+    <!-- Modal de Edição -->
+    <div class="modal fade" id="editEntradaModal{{ entrada.id }}" tabindex="-1" aria-labelledby="editEntradaModalLabel{{ entrada.id }}" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editEntradaModalLabel{{ entrada.id }}">Editar Entrada</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form action="{{ url_for('main.edit_entrada', id=entrada.id) }}" method="post">
+              <div class="mb-3">
+                <label class="form-label">Produto</label>
+                <input type="text" class="form-control" value="{{ entrada.produto.nome }}" readonly>
+              </div>
+              <div class="mb-3">
+                <label for="quantidade" class="form-label">Quantidade</label>
+                <input type="number" class="form-control" name="quantidade" value="{{ entrada.quantidade }}" required>
+              </div>
+              <div class="mb-3">
+                <label for="custo_unitario" class="form-label">Custo Unitário</label>
+                <input type="number" step="0.01" class="form-control" name="custo_unitario" value="{{ entrada.custo_unitario }}" required>
+              </div>
+              <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
     {% endfor %}
   </tbody>
 </table>

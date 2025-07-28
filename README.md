@@ -1,7 +1,5 @@
-<h1 style="font-size: 48px; display: flex; align-items: center; gap: 10px;">
-  <img src="/static/favicon.ico" alt="Smart Finance Logo" width="36" height="36">
-  Smart Finance
-</h1>
+# Smart Finance
+<img src="/static/favicon.ico" alt="Smart Finance Logo" width="215" height="215">
 
 ![Python](https://img.shields.io/badge/python-3.11-blue.svg)
 ![Flask](https://img.shields.io/badge/flask-2.2-green.svg)
@@ -139,5 +137,4 @@ Este projeto está pronto para ser implantado em plataformas como o Render, usan
 
 - **Build Command:** `pip install -r requirements.txt`
 - **Start Command:** `gunicorn app:app`
-
 

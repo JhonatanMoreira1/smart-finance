@@ -1,48 +1,115 @@
-
 {% extends 'layout.html' %}
 
 {% block content %}
-  <h1>Relatório Mensal</h1>
+<h1>Relatório Mensal</h1>
 
-  <form class="row g-3 mb-4">
-    <div class="col-md-4">
-      <label for="mes" class="form-label">Mês</label>
-      <input type="number" class="form-control" id="mes" name="mes" value="{{ mes }}">
+<form class="row g-3 mb-4">
+  <div class="col-md-3">
+    <label for="dia" class="form-label">Dia</label>
+    <input type="number" class="form-control" id="dia" name="dia" min="1" max="31" value="{{ dia or '' }}"
+      placeholder="..." {% if not dia %}disabled{% endif %}>
+    <small class="form-text text-muted">Deixe desmarcado para filtrar por dia.</small>
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" id="mes_inteiro" name="mes_inteiro" {% if not dia %}checked{%
+        endif %}>
+      <label class="form-check-label" for="mes_inteiro">
+        Mostrar mês inteiro
+      </label>
     </div>
-    <div class="col-md-4">
-      <label for="ano" class="form-label">Ano</label>
-      <input type="number" class="form-control" id="ano" name="ano" value="{{ ano }}">
-    </div>
-    <div class="col-md-4 d-flex align-items-end">
-      <button type="submit" class="btn btn-primary">Filtrar</button>
-    </div>
-  </form>
+  </div>
 
-  <div class="row">
-    <div class="col-md-4">
-      <div class="card text-white bg-success mb-3">
-        <div class="card-header">Receita Total</div>
-        <div class="card-body">
-          <h5 class="card-title">R$ {{ receita_total|round(2) }}</h5>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card text-white bg-danger mb-3">
-        <div class="card-header">Custo Total</div>
-        <div class="card-body">
-          <h5 class="card-title">R$ {{ custo_total|round(2) }}</h5>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card text-white bg-info mb-3">
-        <div class="card-header">Lucro</div>
-        <div class="card-body">
-          <h5 class="card-title">R$ {{ lucro|round(2) }}</h5>
-        </div>
+  <div class="col-md-3">
+    <label for="mes" class="form-label">Mês</label>
+    <input type="number" class="form-control" id="mes" name="mes" min="1" max="12" value="{{ mes or '' }}"
+      placeholder="{{ now.month }}">
+  </div>
+  <div class="col-md-3">
+    <label for="ano" class="form-label">Ano</label>
+    <input type="number" class="form-control" id="ano" name="ano" min="2000" max="2100" value="{{ ano or '' }}"
+      placeholder="{{ now.year }}">
+  </div>
+  <div class="col-md-3 d-flex align-items-end">
+    <button type="submit" class="btn btn-primary">Filtrar</button>
+  </div>
+</form>
+
+<script>
+  // Desabilita o campo dia quando "mês inteiro" está marcado
+  document.addEventListener('DOMContentLoaded', function () {
+    const mesInteiro = document.getElementById('mes_inteiro');
+    const dia = document.getElementById('dia');
+    function toggleDia() {
+      dia.disabled = mesInteiro.checked;
+      if (mesInteiro.checked) {
+        dia.value = '';
+      }
+    }
+    mesInteiro.addEventListener('change', toggleDia);
+    toggleDia();
+  });
+</script>
+
+<h2>Relatórios de Produtos</h2>
+<div class="row">
+
+
+
+
+
+  <div class="col-md-3">
+    <div class="card text-white bg-success mb-3">
+      <div class="card-header">Receita Total</div>
+      <div class="card-body">
+        <h5 class="card-title">R$ {{ receita_total_produtos|round(2) }}</h5>
       </div>
     </div>
   </div>
+  <div class="col-md-3">
+    <div class="card text-white bg-danger mb-3">
+      <div class="card-header">Custo dos Produtos Vendidos</div>
+      <div class="card-body">
+        <h5 class="card-title">R$ {{ custo_total_produtos|round(2) }}</h5>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-white bg-info mb-3">
+      <div class="card-header">Lucro</div>
+      <div class="card-body">
+        <h5 class="card-title">R$ {{ lucro_produtos|round(2) }}</h5>
+      </div>
+    </div>
+
+  </div>
+  <div class="col-md-3">
+    <div class="card text-white bg-secondary mb-3">
+      <div class="card-header">Gasto com Reposições</div>
+      <div class="card-body">
+        <h5 class="card-title">R$ {{ valor_gasto_reposicoes|round(2) }}</h5>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2 class="mt-5">Relatórios de Serviços</h2>
+<div class="row">
+
+  <div class="col-md-4">
+    <div class="card text-white bg-danger mb-3">
+      <div class="card-header">Custo de Peças (Serviços)</div>
+      <div class="card-body">
+        <h5 class="card-title">R$ {{ custo_servicos|round(2) }}</h5>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-white bg-success mb-3">
+      <div class="card-header">Lucro de Serviços</div>
+      <div class="card-body">
+        <h5 class="card-title">R$ {{ lucro_servicos|round(2) }}</h5>
+      </div>
+    </div>
+  </div>
+</div>
 
 {% endblock %}
