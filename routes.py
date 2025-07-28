@@ -3,7 +3,7 @@ from sqlalchemy import extract, text
 from datetime import datetime
 from models import db, Produto, Entrada, Saida, Servico
 from flask_login import login_required
-from utils import filtros_data, to_float, imprimir_notinha
+from utils import filtros_data, to_float
 import os
 import subprocess
 import tempfile
