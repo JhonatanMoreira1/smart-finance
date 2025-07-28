@@ -263,13 +263,19 @@ def servicos():
     return render_template('servicos.html', servicos=servicos)
 
 
-@main_bp.route('/imprimir/<int:servico_id>', methods=['POST'])
-def imprimir(servico_id):
+@main_bp.route('/nota_servico/<int:servico_id>')
+@login_required
+def nota_servico(servico_id):
     servico = Servico.query.get_or_404(servico_id)
-    sucesso, mensagem = imprimir_notinha(servico)
+    cnpj = os.getenv('CNPJ_LOJA', '00.000.000/0000-00')
+    nome_loja = os.getenv('NOME_LOJA', 'Minha Loja')
+    telefone = os.getenv('TEL_LOJA', '00 00000-0000')
 
-    flash(mensagem, "success" if sucesso else "danger")
-    return redirect(url_for("main.servicos"))  # ou para onde está a lista
+    return render_template('nota_servico.html',
+                           servico=servico,
+                           cnpj=cnpj,
+                           nome_loja=nome_loja,
+                           telefone=telefone)
 
 
 @main_bp.route('/edit_saida/<int:id>', methods=['POST'])

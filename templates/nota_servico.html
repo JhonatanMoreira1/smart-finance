@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Nota Fiscal</title>
+    <style>
+        body {
+            font-family: monospace;
+            width: 300px;
+            margin: 0 auto;
+        }
+
+        hr {
+            border: 1px dashed #000;
+        }
+    </style>
+</head>
+
+<body onload="window.print(); window.close();">
+    <h3 style="text-align:center;">{{ nome_loja }}</h3>
+    <p style="text-align:center;">CNPJ: {{ cnpj }}<br>Tel: {{ telefone }}</p>
+    <hr>
+    <p>Data/Hora: {{ servico.data_hora.strftime('%d/%m/%Y %H:%M') }}</p>
+    <p>Serviço: {{ servico.servico_descricao }}</p>
+    <p>Aparelho: {{ servico.aparelho }}</p>
+    <p>Tipo: {{ servico.tipo }}</p>
+    <p>
+        Valor: R$
+        {% if servico.tipo == 'Venda de Aparelho' %}
+        {{ servico.preco_aparelho|round(2) }}
+        {% else %}
+        {{ (servico.custo_pecas + servico.mao_de_obra)|round(2) }}
+        {% endif %}
+    </p>
+    <p>Pagamento: {{ servico.forma_pagamento }}</p>
+    <p>Cliente: {{ servico.cliente }}</p>
+    <hr>
+    <p style="text-align:center;">Obrigado pela preferência!</p>
+</body>
+
+</html>

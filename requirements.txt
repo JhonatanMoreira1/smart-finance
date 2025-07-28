@@ -6,6 +6,3 @@ python-dotenv
 Flask-Login
 gunicorn
 Pillow>=11.0
-python-barcode
-qrcode
-pywin32

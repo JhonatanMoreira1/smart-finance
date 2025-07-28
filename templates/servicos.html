@@ -142,9 +142,10 @@
       <td>
         <div class="d-flex gap-2 align-items-stretch">
 
-          <form action="{{ url_for('main.imprimir', servico_id=servico.id) }}" method="post" class="w-100">
-            <button type="submit" class="btn btn-sm btn-secondary w-100 h-100">🖨️ Imprimir</button>
+          <form class="w-100">
+            <button type="button" onclick="imprimirNota({{ servico.id }})">🖨️ Imprimir</button>
           </form>
+
 
           <form class="w-100">
             <button type="button" class="btn btn-warning btn-sm w-100 h-100" data-bs-toggle="modal"
@@ -245,6 +246,13 @@
       </div>
     </div>
     {% endfor %}
+    <script>
+      function imprimirNota(servicoId) {
+        const url = `/nota_servico/${servicoId}`;
+        const janela = window.open(url, "_blank", "width=350,height=500");
+        // O próprio template chama window.print() e fecha a janela automaticamente
+      }
+    </script>
     <script>
       function atualizarCamposServico(tipo, $label, $input, $radiosDiv, $finalizado, $iniciado) {
         $('#custo_pecas_div').show();
