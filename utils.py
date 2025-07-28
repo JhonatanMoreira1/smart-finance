@@ -1,5 +1,4 @@
 from sqlalchemy import extract
-from escpos.printer import Usb
 from datetime import datetime
 import os
 import tempfile
