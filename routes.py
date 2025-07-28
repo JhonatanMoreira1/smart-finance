@@ -8,8 +8,6 @@ import os
 import subprocess
 import tempfile
 
-main_bp = Blueprint('main', __name__)
-
 @main_bp.route('/')
 @login_required
 def index():
@@ -338,17 +336,11 @@ def delete_servico(id):
 
 @main_bp.route('/imprimir/<int:servico_id>', methods=['POST'])
 def imprimir(servico_id):
-    servico = Servico.query.get_or_404(servico_id)
+    servico = Servico.query.get_or_404(id)
+    sucesso, mensagem = imprimir_notinha(servico)
 
-    try:
-        imprimir_notinha(servico)
-        flash("Notinha impressa com sucesso!", "success")
-    except Exception as e:
-        flash(f"Erro ao imprimir: {e}", "danger")
-
-    return redirect(url_for('main.servicos'))
-
-
+    flash(mensagem, "success" if sucesso else "danger")
+    return redirect(url_for("main.servicos"))  # ou para onde está a lista
 
 @main_bp.route('/backup', methods=['GET'])
 @login_required
