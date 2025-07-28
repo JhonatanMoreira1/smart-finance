@@ -99,7 +99,11 @@ def relatorios():
     now = datetime.now()
     mes = request.args.get('mes', default=now.month, type=int)
     ano = request.args.get('ano', default=now.year, type=int)
-    mes_inteiro = request.args.get('mes_inteiro')
+
+    # Confere se o checkbox está marcado
+    mes_inteiro = 'mes_inteiro' in request.args
+
+    # Define o dia
     if mes_inteiro:
         dia = None
     else:
@@ -107,54 +111,49 @@ def relatorios():
         if not dia or dia < 1 or dia > 31:
             dia = None
 
+    # Filtros e dados
     filtros_saida = filtros_data(Saida, 'data', dia, mes, ano)
     saidas_no_periodo = Saida.query.filter(*filtros_saida).all()
 
-    filtros_receita = filtros_data(Saida, 'data', dia, mes, ano)
-    receita_total_produtos = db.session.query(db.func.sum(Saida.total_venda)).filter(*filtros_receita).scalar() or 0
+    receita_total_produtos = db.session.query(db.func.sum(Saida.total_venda)).filter(*filtros_saida).scalar() or 0
 
     filtros_entrada = filtros_data(Entrada, 'data', dia, mes, ano)
     entradas_no_periodo = Entrada.query.filter(*filtros_entrada).all()
-
-    filtros_reposicoes = filtros_data(Entrada, 'data', dia, mes, ano)
-    valor_gasto_reposicoes = db.session.query(db.func.sum(Entrada.total_custo)).filter(*filtros_reposicoes).scalar() or 0
+    valor_gasto_reposicoes = db.session.query(db.func.sum(Entrada.total_custo)).filter(*filtros_entrada).scalar() or 0
 
     filtros_servico = filtros_data(Servico, 'data_hora', dia, mes, ano)
     filtros_servico.append(Servico.status == 'Finalizado')
     servicos_no_periodo = Servico.query.filter(*filtros_servico).all()
 
-    receita_servicos = sum(s.preco_aparelho if s.tipo == 'Venda de Aparelho' else s.mao_de_obra for s in servicos_no_periodo)
+    receita_servicos = sum(
+        s.preco_aparelho if s.tipo == 'Venda de Aparelho' else s.mao_de_obra
+        for s in servicos_no_periodo
+    )
     custo_servicos = sum(s.custo_pecas for s in servicos_no_periodo)
 
     lucro_servicos = sum(
-    (s.preco_aparelho - s.custo_pecas) if s.tipo == 'Venda de Aparelho' else s.mao_de_obra
-    for s in servicos_no_periodo
-)
+        (s.preco_aparelho - s.custo_pecas) if s.tipo == 'Venda de Aparelho' else s.mao_de_obra
+        for s in servicos_no_periodo
+    )
 
     custo_total_produtos = sum(saida.produto.custo * saida.quantidade for saida in saidas_no_periodo)
-
-    mes_inteiro = request.args.get('mes_inteiro')
-    if mes_inteiro:
-        dia = None
-    else:
-        dia = request.args.get('dia', type=int)
-        if not dia or dia < 1 or dia > 31:
-            dia = None
-
     lucro_produtos = receita_total_produtos - custo_total_produtos
-    return render_template('relatorios.html',
-                           receita_total_produtos=receita_total_produtos,
-                           custo_total_produtos=custo_total_produtos,
-                           lucro_produtos=lucro_produtos,
-                           valor_gasto_reposicoes=valor_gasto_reposicoes,
-                           receita_servicos=receita_servicos,
-                           custo_servicos=custo_servicos,
-                           lucro_servicos=lucro_servicos,
-                           dia=dia,
-                           mes=mes,
-                           ano=ano,
-                           now=now)
 
+    return render_template(
+        'relatorios.html',
+        receita_total_produtos=receita_total_produtos,
+        custo_total_produtos=custo_total_produtos,
+        lucro_produtos=lucro_produtos,
+        valor_gasto_reposicoes=valor_gasto_reposicoes,
+        receita_servicos=receita_servicos,
+        custo_servicos=custo_servicos,
+        lucro_servicos=lucro_servicos,
+        dia=dia,
+        mes=mes,
+        ano=ano,
+        now=now,
+        mes_inteiro=mes_inteiro  # passa valor booleano real
+    )
 
 @main_bp.route('/edit_product/<int:id>', methods=['POST'])
 @login_required
