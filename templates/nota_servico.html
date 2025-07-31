@@ -2,40 +2,110 @@
 <html>
 
 <head>
+    <meta charset="utf-8">
     <title>Nota Fiscal</title>
     <style>
+        @page {
+            size: 52mm 95mm;
+            margin: 0;
+        }
+
+        html,
         body {
+            width: 52mm;
+            height: 95mm;
+            margin: 0;
+            padding: 0;
             font-family: monospace;
-            width: 300px;
-            margin: 0 auto;
+            font-size: 12px;
+            line-height: 1.2;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            overflow: hidden;
+        }
+
+        h3 {
+            font-size: 14px;
+            margin: 4px 0;
+            text-align: center;
+        }
+
+        p {
+            margin: 1px 8px;
+            padding: 0;
         }
 
         hr {
-            border: 1px dashed #000;
+            border: none;
+            border-top: 1px dashed #000;
+            margin: 3px 0;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .garantia {
+            font-size: 11px;
+            text-align: justify;
+            margin: 3px 7px;
+        }
+
+        .footer {
+            margin: 1px 0 0 0;
+            font-size: 12px;
+            text-align: center;
+        }
+
+
+        @media print {
+
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+
+            * {
+                page-break-inside: avoid !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
         }
     </style>
 </head>
 
-<body onload="window.print(); window.close();">
-    <h3 style="text-align:center;">{{ nome_loja }}</h3>
-    <p style="text-align:center;">CNPJ: {{ cnpj }}<br>Tel: {{ telefone }}</p>
+<body onload="window.print();">
+    <h3>{{ nome_loja }}</h3>
+    <p class="center">CNPJ: {{ cnpj }}<br>Tel: {{ telefone }}</p>
     <hr>
-    <p>Data/Hora: {{ servico.data_hora.strftime('%d/%m/%Y %H:%M') }}</p>
-    <p>Serviço: {{ servico.servico_descricao }}</p>
-    <p>Aparelho: {{ servico.aparelho }}</p>
-    <p>Tipo: {{ servico.tipo }}</p>
+
+    <p><strong>Data/Hora:</strong> {{ servico.data_hora.strftime('%d/%m/%Y %H:%M') }}</p>
+    <p><strong>Serviço:</strong> {{ servico.servico_descricao }}</p>
+    <p><strong>Aparelho:</strong> {{ servico.aparelho }}</p>
+    <p><strong>Tipo:</strong> {{ servico.tipo }}</p>
     <p>
-        Valor: R$
+        <strong>Valor:</strong> R$
         {% if servico.tipo == 'Venda de Aparelho' %}
         {{ servico.preco_aparelho|round(2) }}
         {% else %}
         {{ (servico.custo_pecas + servico.mao_de_obra)|round(2) }}
         {% endif %}
     </p>
-    <p>Pagamento: {{ servico.forma_pagamento }}</p>
-    <p>Cliente: {{ servico.cliente }}</p>
+    <p><strong>Pagamento:</strong> {{ servico.forma_pagamento }}</p>
+    <p><strong>Cliente:</strong> {{ servico.cliente }}</p>
+
     <hr>
-    <p style="text-align:center;">Obrigado pela preferência!</p>
+    <p class="garantia">
+        Garantia de 3 meses para trocas de tela e bateria em caso de qualquer defeito de fábrica, como mal funcionamento
+        repentino ou espontâneo. A garantia não cobre mal uso, quedas, telas trincadas, arranhões ou qualquer tipo de
+        dano físico.
+    </p>
+    <hr>
+    <p class="footer"><strong>Obrigado pela preferência!</strong></p>
 </body>
 
 </html>
