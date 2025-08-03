@@ -1,17 +1,18 @@
 import os
-from flask import Flask
+from flask import Flask, render_template
 from dotenv import load_dotenv
 from models import db
 from auth import login_manager, auth_bp
 from routes import main_bp
 from utils import format_datetime_local
+from sqlalchemy.exc import OperationalError
 
 load_dotenv()
 
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'uma_chave_secreta_muito_segura')
-    app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}/{os.getenv('DB_NAME')}"
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     db.init_app(app)
@@ -21,5 +22,9 @@ def create_app():
     app.register_blueprint(main_bp)
 
     app.jinja_env.filters['localtime'] = format_datetime_local
+
+    @app.errorhandler(OperationalError)
+    def handle_db_connection_error(e):
+        return render_template('500_db_error.html'), 500
 
     return app
