@@ -67,14 +67,7 @@
 
 
 
-  <div class="col-md-3">
-    <div class="card text-white bg-success mb-3">
-      <div class="card-header">Receita Total</div>
-      <div class="card-body">
-        <h5 class="card-title">R$ {{ receita_total_produtos|round(2) }}</h5>
-      </div>
-    </div>
-  </div>
+
   <div class="col-md-3">
     <div class="card text-white bg-danger mb-3">
       <div class="card-header">Custo dos Produtos Vendidos</div>
@@ -84,7 +77,15 @@
     </div>
   </div>
   <div class="col-md-3">
-    <div class="card text-white bg-info mb-3">
+    <div class="card text-white bg-secondary mb-3">
+      <div class="card-header">Receita Total</div>
+      <div class="card-body">
+        <h5 class="card-title">R$ {{ receita_total_produtos|round(2) }}</h5>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-white bg-success mb-3">
       <div class="card-header">Lucro</div>
       <div class="card-body">
         <h5 class="card-title">R$ {{ lucro_produtos|round(2) }}</h5>
@@ -93,7 +94,7 @@
 
   </div>
   <div class="col-md-3">
-    <div class="card text-white bg-secondary mb-3">
+    <div class="card text-white bg-info mb-3">
       <div class="card-header">Gasto com Reposições</div>
       <div class="card-body">
         <h5 class="card-title">R$ {{ valor_gasto_reposicoes|round(2) }}</h5>
@@ -114,10 +115,47 @@
     </div>
   </div>
   <div class="col-md-4">
+    <div class="card text-white bg-secondary mb-3">
+      <div class="card-header">Receita de Serviços</div>
+      <div class="card-body">
+        <h5 class="card-title">R$ {{ receita_servicos|round(2) }}</h5>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
     <div class="card text-white bg-success mb-3">
       <div class="card-header">Lucro de Serviços</div>
       <div class="card-body">
         <h5 class="card-title">R$ {{ lucro_servicos|round(2) }}</h5>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2 class="mt-5">Relatórios de Revenda de Aparelhos</h2>
+<div class="row">
+
+  <div class="col-md-4">
+    <div class="card text-white bg-danger mb-3">
+      <div class="card-header">Custo de Revendas</div>
+      <div class="card-body">
+        <h5 class="card-title">R$ {{ custo_revendas|round(2) }}</h5>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-white bg-secondary mb-3">
+      <div class="card-header">Receita de Revendas</div>
+      <div class="card-body">
+        <h5 class="card-title">R$ {{ receita_revendas|round(2) }}</h5>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-white bg-success mb-3">
+      <div class="card-header">Lucro de Revendas</div>
+      <div class="card-body">
+        <h5 class="card-title">R$ {{ lucro_revendas|round(2) }}</h5>
       </div>
     </div>
   </div>

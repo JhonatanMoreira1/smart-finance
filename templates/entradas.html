@@ -76,7 +76,7 @@
     {% for entrada in entradas %}
     <tr>
       <td>{{ entrada.produto.id }}</td>
-      <td>{{ entrada.data.strftime('%d/%m/%Y %H:%M') }}</td>
+      <td>{{ entrada.data | localtime }}</td>
       <td>{{ entrada.produto.nome }}</td>
       <td>{{ entrada.quantidade }}</td>
       <td>{{ entrada.custo_unitario }}</td>

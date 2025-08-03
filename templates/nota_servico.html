@@ -83,8 +83,14 @@
     <p class="center">CNPJ: {{ cnpj }}<br>Tel: {{ telefone }}</p>
     <hr>
 
-    <p><strong>Data/Hora:</strong> {{ servico.data_hora.strftime('%d/%m/%Y %H:%M') }}</p>
-    <p><strong>Serviço:</strong> {{ servico.servico_descricao }}</p>
+    <p><strong>Data e Hora:</strong> {{ servico.data_hora | localtime }}</p>
+    <p><strong>Serviço:</strong>
+        {% if servico.servico_descricao.startswith('[REVENDA]') %}
+        Revenda
+        {% else %}
+        {{ servico.servico_descricao }}
+        {% endif %}
+    </p>
     <p><strong>Aparelho:</strong> {{ servico.aparelho }}</p>
     <p><strong>Tipo:</strong> {{ servico.tipo }}</p>
     <p>
@@ -99,11 +105,24 @@
     <p><strong>Cliente:</strong> {{ servico.cliente }}</p>
 
     <hr>
-    <p class="garantia">
+    <div class="garantia">
+        {% if servico.tipo == 'Venda de Aparelho' and not servico.servico_descricao.startswith('[REVENDA]') %}
+        Garantia de 3 meses para defeitos de tela, bateria ou qualquer defeito de componente, como mal funcionamento
+        repentino ou espontâneo. A garantia não cobre mal uso, quedas, telas trincadas, arranhões ou qualquer tipo de
+        dano físico.
+
+        {% elif servico.tipo == 'Venda de Aparelho' and servico.servico_descricao.startswith('[REVENDA]') %}
+        Garantia de 12 meses fornecida pelo fabricante, válida contra defeitos de fábrica e falhas de funcionamento
+        espontâneas.
+        Aparelhos com sinais de violação ou danos externos perdem automaticamente o direito à garantia.
+
+        {% elif servico.tipo == 'Manutenção' %}
         Garantia de 3 meses para trocas de tela e bateria em caso de qualquer defeito de fábrica, como mal funcionamento
         repentino ou espontâneo. A garantia não cobre mal uso, quedas, telas trincadas, arranhões ou qualquer tipo de
         dano físico.
-    </p>
+        {% endif %}
+
+    </div>
     <hr>
     <p class="footer"><strong>Obrigado pela preferência!</strong></p>
 </body>

@@ -124,18 +124,25 @@ def relatorios():
 
     filtros_servico = filtros_data(Servico, 'data_hora', dia, mes, ano)
     filtros_servico.append(Servico.status == 'Finalizado')
-    servicos_no_periodo = Servico.query.filter(*filtros_servico).all()
+    servicos_finalizados = Servico.query.filter(*filtros_servico).all()
 
-    receita_servicos = sum(
+    # Separar Revendas dos outros serviços
+    servicos_revenda = [s for s in servicos_finalizados if s.servico_descricao.startswith('[REVENDA]')]
+    outros_servicos = [s for s in servicos_finalizados if not s.servico_descricao.startswith('[REVENDA]')]
+
+    # Cálculos para Revendas
+    receita_revendas = sum(s.preco_aparelho for s in servicos_revenda)
+    custo_revendas = sum(s.custo_pecas for s in servicos_revenda)
+    lucro_revendas = receita_revendas - custo_revendas
+
+    # Cálculos para Outros Serviços (Manutenção e Reformas)
+    receita_outros_servicos = sum(
         s.preco_aparelho if s.tipo == 'Venda de Aparelho' else s.mao_de_obra
-        for s in servicos_no_periodo
+        for s in outros_servicos
     )
-    custo_servicos = sum(s.custo_pecas for s in servicos_no_periodo)
+    custo_outros_servicos = sum(s.custo_pecas for s in outros_servicos)
+    lucro_outros_servicos = receita_outros_servicos - custo_outros_servicos
 
-    lucro_servicos = sum(
-        (s.preco_aparelho - s.custo_pecas) if s.tipo == 'Venda de Aparelho' else s.mao_de_obra
-        for s in servicos_no_periodo
-    )
 
     custo_total_produtos = sum(saida.produto.custo * saida.quantidade for saida in saidas_no_periodo)
     lucro_produtos = receita_total_produtos - custo_total_produtos
@@ -146,14 +153,20 @@ def relatorios():
         custo_total_produtos=custo_total_produtos,
         lucro_produtos=lucro_produtos,
         valor_gasto_reposicoes=valor_gasto_reposicoes,
-        receita_servicos=receita_servicos,
-        custo_servicos=custo_servicos,
-        lucro_servicos=lucro_servicos,
+        
+        receita_servicos=receita_outros_servicos,
+        custo_servicos=custo_outros_servicos,
+        lucro_servicos=lucro_outros_servicos,
+
+        receita_revendas=receita_revendas,
+        custo_revendas=custo_revendas,
+        lucro_revendas=lucro_revendas,
+
         dia=dia,
         mes=mes,
         ano=ano,
         now=now,
-        mes_inteiro=mes_inteiro  # passa valor booleano real
+        mes_inteiro=mes_inteiro
     )
 
 @main_bp.route('/edit_product/<int:id>', methods=['POST'])
@@ -234,22 +247,24 @@ def servicos():
     if request.method == 'POST':
         servico_descricao = request.form['servico_descricao']
         aparelho = request.form.get('aparelho')
-        
-        status = request.form['status']
+        tipo = request.form.get('tipo')
+        subtipo_venda = request.form.get('subtipo_venda')
 
+        if tipo == 'Venda de Aparelho' and subtipo_venda == 'Revenda':
+            servico_descricao = f"[REVENDA] {servico_descricao}"
+
+        status = request.form['status']
         custo_pecas = float(request.form.get('custo_pecas', 0.0))
         mao_de_obra = 0.0
         preco_aparelho = 0.0
 
-        tipo = request.form.get('tipo')
         if tipo == 'Manutenção':
             mao_de_obra = float(request.form.get('mao_de_obra', 0.0))
-            
         elif tipo == 'Venda de Aparelho':
             preco_aparelho = float(request.form.get('preco_aparelho', 0.0))
 
         forma_pagamento = request.form.get('forma_pagamento')
-        cliente = request.form.get('cliente')   
+        cliente = request.form.get('cliente')
 
         novo_servico = Servico(servico_descricao=servico_descricao, aparelho=aparelho, tipo=tipo,
                                custo_pecas=custo_pecas, mao_de_obra=mao_de_obra,
@@ -277,6 +292,19 @@ def nota_servico(servico_id):
                            nome_loja=nome_loja,
                            telefone=telefone)
 
+
+@main_bp.route('/nota_produto/<int:saida_id>')
+@login_required
+def nota_produto(saida_id):
+    saida = Saida.query.get_or_404(saida_id)
+    cnpj = os.getenv('CNPJ_LOJA', '00.000.000/0000-00')
+    nome_loja = os.getenv('NOME_LOJA', 'Minha Loja')
+    telefone = os.getenv('TEL_LOJA', '00 00000-0000')
+    return render_template('nota_produto.html',
+                           saida=saida,
+                            cnpj=cnpj,
+                            nome_loja=nome_loja,
+                            telefone=telefone)
 
 @main_bp.route('/edit_saida/<int:id>', methods=['POST'])
 @login_required
@@ -315,9 +343,17 @@ def delete_saida(id):
 def edit_servico(id):
     servico = Servico.query.get_or_404(id)
     
-    servico.servico_descricao = request.form['servico_descricao']
+    servico_descricao = request.form['servico_descricao'].replace('[REVENDA]', '').strip()
+    tipo = request.form['tipo']
+    subtipo_venda = request.form.get(f'subtipo_venda_{id}')
+
+    if tipo == 'Venda de Aparelho' and subtipo_venda == 'Revenda':
+        servico.servico_descricao = f"[REVENDA] {servico_descricao}"
+    else:
+        servico.servico_descricao = servico_descricao
+
     servico.aparelho = request.form.get('aparelho')
-    servico.tipo = request.form['tipo']
+    servico.tipo = tipo
     servico.forma_pagamento = request.form.get('forma_pagamento')
     servico.cliente = request.form.get('cliente')
     

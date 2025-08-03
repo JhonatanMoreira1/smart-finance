@@ -1,4 +1,14 @@
 from sqlalchemy import extract
+from datetime import datetime, timezone
+import pytz
+
+def format_datetime_local(dt):
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    
+    local_tz = pytz.timezone('America/Sao_Paulo')
+    local_dt = dt.astimezone(local_tz)
+    return local_dt.strftime('%d/%m/%y %H:%M')
 
 def filtros_data(model, data_field, dia=None, mes=None, ano=None):
     filtros = []

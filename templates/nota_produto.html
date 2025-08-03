@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Nota Fiscal</title>
+    <style>
+        @page {
+            size: 52mm 95mm;
+            margin: 0;
+        }
+
+        html,
+        body {
+            width: 52mm;
+            height: 95mm;
+            margin: 0;
+            padding: 0;
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.2;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            overflow: hidden;
+        }
+
+        h3 {
+            font-size: 14px;
+            margin: 4px 0;
+            text-align: center;
+        }
+
+        p {
+            margin: 1px 8px;
+            padding: 0;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px dashed #000;
+            margin: 3px 0;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .garantia {
+            font-size: 11px;
+            text-align: justify;
+            margin: 3px 7px;
+        }
+
+        .footer {
+            margin: 1px 0 0 0;
+            font-size: 12px;
+            text-align: center;
+        }
+
+
+        @media print {
+
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+
+            * {
+                page-break-inside: avoid !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+
+<body onload="window.print();">
+    <h3>{{ nome_loja }}</h3>
+    <p class="center">CNPJ: {{ cnpj }}<br>Tel: {{ telefone }}</p>
+    <hr>
+
+    <p><strong>Data e Hora:</strong> {{ saida.data | localtime }}</p>
+    <p><strong>Produto:</strong> {{ saida.produto.nome }}</p>
+    <p><strong>Quantidade:</strong> {{ saida.quantidade }}</p>
+    <p><strong>Testado:</strong> Sim ▢ Não ▢</p>
+    <p>
+        <strong>Valor total:</strong> R$
+        {{ saida.total_venda }}
+    </p>
+    <p><strong>Pagamento:</strong> {{ saida.forma_pagamento }}</p>
+    <p><strong>Cliente:</strong> {{ saida.cliente }}</p>
+
+    <hr>
+    <p class="garantia">
+        Garantia de 3 dias para troca do produto apenas em caso de defeito de fábrica. A garantia não cobre danos
+        físicos, quedas, rompimento de cabos, ou sinais de uso inadequado. Produtos testados no
+        momento da venda são entregues em pleno funcionamento, portanto não têm garantia definitiva.
+    </p>
+    <hr>
+    <p class="footer"><strong>Obrigado pela preferência!</strong></p>
+</body>
+
+</html>

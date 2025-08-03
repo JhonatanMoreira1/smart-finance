@@ -51,9 +51,9 @@
 
 <script>
   $('#addSaidaModal').on('shown.bs.modal', function () {
-      $('#produto_id_saida').select2({
-          dropdownParent: $('#addSaidaModal')
-      });
+    $('#produto_id_saida').select2({
+      dropdownParent: $('#addSaidaModal')
+    });
   });
 </script>
 
@@ -75,7 +75,7 @@
     {% for saida in saidas %}
     <tr>
       <td>{{ saida.produto.id }}</td>
-      <td>{{ saida.data.strftime('%d/%m/%Y %H:%M') }}</td>
+      <td>{{ saida.data | localtime }}</td>
       <td>{{ saida.produto.nome }}</td>
       <td>{{ saida.quantidade }}</td>
       <td>{{ saida.preco_unitario }}</td>
@@ -83,17 +83,31 @@
       <td>{{ saida.forma_pagamento }}</td>
       <td>{{ saida.cliente }}</td>
       <td>
-        <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editSaidaModal{{ saida.id }}">
-          Editar
-        </button>
-        <form action="{{ url_for('main.delete_saida', id=saida.id) }}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja deletar esta saída? Isso afetará o estoque do produto.');">
-          <button type="submit" class="btn btn-danger btn-sm">Deletar</button>
-        </form>
+        <div class="d-flex gap-2 align-items-stretch">
+          <form class="w-100">
+            <button type="button" class="btn btn-light btn-sm w-100 h-100 border border-dark"
+              onclick="imprimirNota({{ saida.id }})">🖨️Imprimir</button>
+          </form>
+
+          <form class="w-100">
+            <button type="button" class="btn btn-warning btn-sm w-100 h-100" data-bs-toggle="modal"
+              data-bs-target="#editSaidaModal{{ saida.id }}">
+              Editar
+            </button>
+          </form>
+
+          <form class="w-100" action="{{ url_for('main.delete_saida', id=saida.id) }}" method="post"
+            style="display:inline;"
+            onsubmit="return confirm('Tem certeza que deseja deletar esta saída? Isso afetará o estoque do produto.');">
+            <button type="submit" class="btn btn-danger btn-sm w-100 h-100">Deletar</button>
+          </form>
+        </div>
       </td>
     </tr>
 
     <!-- Modal de Edição -->
-    <div class="modal fade" id="editSaidaModal{{ saida.id }}" tabindex="-1" aria-labelledby="editSaidaModalLabel{{ saida.id }}" aria-hidden="true">
+    <div class="modal fade" id="editSaidaModal{{ saida.id }}" tabindex="-1"
+      aria-labelledby="editSaidaModalLabel{{ saida.id }}" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -112,7 +126,8 @@
               </div>
               <div class="mb-3">
                 <label for="preco_unitario" class="form-label">Preço Unitário</label>
-                <input type="number" step="0.01" class="form-control" name="preco_unitario" value="{{ saida.preco_unitario }}" required>
+                <input type="number" step="0.01" class="form-control" name="preco_unitario"
+                  value="{{ saida.preco_unitario }}" required>
               </div>
               <div class="mb-3">
                 <label for="forma_pagamento" class="form-label">Forma de Pagamento</label>
@@ -129,6 +144,13 @@
       </div>
     </div>
     {% endfor %}
+    <script>
+      function imprimirNota(saidaId) {
+        const url = `/nota_produto/${saidaId}`;
+        const janela = window.open(url, "_blank", "width=350,height=500");
+        // O próprio template chama window.print() e fecha a janela automaticamente
+      }
+    </script>
   </tbody>
 </table>
 {% endblock %}
