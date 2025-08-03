@@ -53,9 +53,39 @@
 </div>
 
 <script>
+  function matchCustom(params, data) {
+    // Se a barra de pesquisa estiver vazia, retorna todos os resultados
+    if ($.trim(params.term) === '') {
+      return data;
+    }
+
+    // Não busca em "filhos" de grupos de opções
+    if (data.children && data.children.length > 0) {
+      var matchedChildren = [];
+      $.each(data.children, function(idx, child) {
+        if (matchCustom(params, child)) {
+          matchedChildren.push(child);
+        }
+      });
+
+      if (matchedChildren.length) {
+        var modifiedData = $.extend({}, data, true);
+        modifiedData.children = matchedChildren;
+        return modifiedData;
+      }
+    } else if (data.text.toUpperCase().indexOf(params.term.toUpperCase()) > -1) {
+      // Corresponde se o termo de busca estiver em qualquer parte do texto
+      return data;
+    }
+
+    // Retorna null se não houver correspondência
+    return null;
+  }
+
   $('#addEntradaModal').on('shown.bs.modal', function () {
       $('#produto_id_entrada').select2({
-          dropdownParent: $('#addEntradaModal')
+          dropdownParent: $('#addEntradaModal'),
+          matcher: matchCustom
       });
   });
 </script>

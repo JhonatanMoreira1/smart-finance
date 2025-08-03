@@ -29,7 +29,13 @@ def produtos():
         flash('Produto adicionado com sucesso!', 'success')
         return redirect(url_for('main.produtos'))
     
-    produtos = Produto.query.order_by(Produto.nome).all()
+    query = request.args.get('q')
+    if query:
+        produtos_query = Produto.query.filter(Produto.nome.ilike(f'%{query}%'))
+    else:
+        produtos_query = Produto.query
+
+    produtos = produtos_query.order_by(Produto.nome).all()
     
     custo_total_estoque = sum(p.custo * p.estoque for p in produtos)
     valor_total_estoque = sum(p.preco_venda * p.estoque for p in produtos)
@@ -37,7 +43,8 @@ def produtos():
     return render_template('produtos.html', 
                            produtos=produtos, 
                            custo_total_estoque=custo_total_estoque, 
-                           valor_total_estoque=valor_total_estoque)
+                           valor_total_estoque=valor_total_estoque,
+                           query=query)
 
 @main_bp.route('/entradas', methods=['GET', 'POST'])
 @login_required
