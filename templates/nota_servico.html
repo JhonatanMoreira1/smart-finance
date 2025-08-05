@@ -107,12 +107,12 @@
     <hr>
     <div class="garantia">
         {% if servico.tipo == 'Venda de Aparelho' and not servico.servico_descricao.startswith('[REVENDA]') %}
-        Garantia de 3 meses para defeitos de tela, bateria ou qualquer defeito de componente, como mal funcionamento
+        Garantia de 30 dias para defeitos de tela, bateria ou qualquer defeito de componente, como mal funcionamento
         repentino ou espontâneo. A garantia não cobre mal uso, quedas, telas trincadas, arranhões ou qualquer tipo de
         dano físico.
 
         {% elif servico.tipo == 'Venda de Aparelho' and servico.servico_descricao.startswith('[REVENDA]') %}
-        Garantia de 12 meses fornecida pelo fabricante, válida contra defeitos de fábrica e falhas de funcionamento
+        Garantia de 3 meses fornecida pelo fabricante, válida contra defeitos de fábrica e falhas de funcionamento
         espontâneas.
         Aparelhos com sinais de violação ou danos externos perdem automaticamente o direito à garantia.
 

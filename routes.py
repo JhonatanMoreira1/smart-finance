@@ -345,10 +345,15 @@ def delete_saida(id):
     flash('Saída deletada com sucesso!', 'success')
     return redirect(url_for('main.saidas'))
 
+from datetime import datetime, timezone
+
 @main_bp.route('/edit_servico/<int:id>', methods=['POST'])
 @login_required
 def edit_servico(id):
     servico = Servico.query.get_or_404(id)
+    
+    # Guarda o status antigo para comparação
+    status_antigo = servico.status
     
     servico_descricao = request.form['servico_descricao'].replace('[REVENDA]', '').strip()
     tipo = request.form['tipo']
@@ -379,6 +384,10 @@ def edit_servico(id):
 
     novo_status = request.form['status']
     
+    # Lógica para atualizar a data/hora
+    if status_antigo == 'Iniciado' and novo_status == 'Finalizado':
+        servico.data_hora = datetime.now(timezone.utc)
+
     servico.status = novo_status
     
     db.session.commit()
