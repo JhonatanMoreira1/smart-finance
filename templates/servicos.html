@@ -260,10 +260,25 @@
 
       $(document).ready(function () {
         // --- Lógica para o Modal de Adicionar ---
+        function updateDescricao() {
+            const tipo = $('#tipo_servico').val();
+            const subtipo = $('input[name="subtipo_venda"]:checked').val();
+            const descricaoInput = $('#servico_descricao');
+
+            if (tipo === 'Venda de Aparelho') {
+                if (subtipo === 'Revenda') {
+                    descricaoInput.val('Revenda de Aparelho');
+                } else {
+                    descricaoInput.val('Venda de Aparelho');
+                }
+            } else {
+                descricaoInput.val('');
+            }
+        }
+
         $('#tipo_servico').on('change', function () {
           const tipo = $(this).val();
           const subtipoDiv = $('#subtipo_venda_div');
-          const valorDinamicoDiv = $('#valor_dinamico_div');
           const valorDinamicoLabel = $('#valor_dinamico_label');
           const valorDinamicoInput = $('#valor_dinamico');
           const statusDiv = $('#status_radios_div');
@@ -281,7 +296,10 @@
             statusDiv.show();
             $('#status_iniciado').prop('checked', true);
           }
+          updateDescricao(); // Atualiza a descrição quando o tipo muda
         }).trigger('change');
+
+        $('input[name="subtipo_venda"]').on('change', updateDescricao); // Atualiza a descrição quando o subtipo muda
 
         // --- Lógica para os Modais de Edição ---
         $('.edit_tipo_servico').on('change', function () {

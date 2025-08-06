@@ -100,6 +100,9 @@ def saidas():
     produtos = Produto.query.all()
     return render_template('saidas.html', saidas=saidas, produtos=produtos)
 
+
+
+
 @main_bp.route('/relatorios')
 @login_required
 def relatorios():
@@ -107,52 +110,56 @@ def relatorios():
     mes = request.args.get('mes', default=now.month, type=int)
     ano = request.args.get('ano', default=now.year, type=int)
 
-    # Confere se o checkbox está marcado
     mes_inteiro = 'mes_inteiro' in request.args
 
-    # Define o dia
     if mes_inteiro:
         dia = None
     else:
         dia = request.args.get('dia', type=int)
-        if not dia or dia < 1 or dia > 31:
-            dia = now.day  # define o dia atual como fallback
+        dia = dia if dia and 1 <= dia <= 31 else now.day
 
-
-    # Filtros e dados
+    # Filtros
     filtros_saida = filtros_data(Saida, 'data', dia, mes, ano)
-    saidas_no_periodo = Saida.query.filter(*filtros_saida).all()
-
-    receita_total_produtos = db.session.query(db.func.sum(Saida.total_venda)).filter(*filtros_saida).scalar() or 0
-
     filtros_entrada = filtros_data(Entrada, 'data', dia, mes, ano)
-    entradas_no_periodo = Entrada.query.filter(*filtros_entrada).all()
+    filtros_servico = filtros_data(Servico, 'data_hora', dia, mes, ano) + [Servico.status == 'Finalizado']
+
+    # Produtos
+    saidas_no_periodo = Saida.query.filter(*filtros_saida).all()
+    receita_total_produtos = db.session.query(db.func.sum(Saida.total_venda)).filter(*filtros_saida).scalar() or 0
+    custo_total_produtos = sum(saida.produto.custo * saida.quantidade for saida in saidas_no_periodo)
+    lucro_produtos = receita_total_produtos - custo_total_produtos
+
+    # Reposições
     valor_gasto_reposicoes = db.session.query(db.func.sum(Entrada.total_custo)).filter(*filtros_entrada).scalar() or 0
 
-    filtros_servico = filtros_data(Servico, 'data_hora', dia, mes, ano)
-    filtros_servico.append(Servico.status == 'Finalizado')
+    # Serviços
     servicos_finalizados = Servico.query.filter(*filtros_servico).all()
-
-    # Separar Revendas dos outros serviços
     servicos_revenda = [s for s in servicos_finalizados if s.servico_descricao.startswith('[REVENDA]')]
     outros_servicos = [s for s in servicos_finalizados if not s.servico_descricao.startswith('[REVENDA]')]
 
-    # Cálculos para Revendas
+    # Revenda
     receita_revendas = sum(s.preco_aparelho for s in servicos_revenda)
     custo_revendas = sum(s.custo_pecas for s in servicos_revenda)
     lucro_revendas = receita_revendas - custo_revendas
 
-    # Cálculos para Outros Serviços (Manutenção e Reformas)
-    receita_outros_servicos = sum(
-        s.preco_aparelho if s.tipo == 'Venda de Aparelho' else s.mao_de_obra
-        for s in outros_servicos
-    )
-    custo_outros_servicos = sum(s.custo_pecas for s in outros_servicos)
-    lucro_outros_servicos = receita_outros_servicos - custo_outros_servicos
+    # Manutenção e Reforma
+    receita_manutencao = custo_manutencao = lucro_manutencao = 0
+    receita_reformas = custo_reformas = lucro_reformas = 0
 
+    for s in outros_servicos:
+        if s.tipo == 'Manutenção':
+            receita_manutencao += s.mao_de_obra + s.custo_pecas
+            custo_manutencao += s.custo_pecas
+            lucro_manutencao += s.mao_de_obra
+        elif s.tipo == 'Venda de Aparelho':
+            receita_reformas += s.preco_aparelho
+            custo_reformas += s.custo_pecas
+            lucro_reformas += s.preco_aparelho - s.custo_pecas
 
-    custo_total_produtos = sum(saida.produto.custo * saida.quantidade for saida in saidas_no_periodo)
-    lucro_produtos = receita_total_produtos - custo_total_produtos
+    # Totais combinados (manutenção + reformas)
+    receita_outros_servicos = receita_manutencao + receita_reformas
+    custo_outros_servicos = custo_manutencao + custo_reformas
+    lucro_outros_servicos = lucro_manutencao + lucro_reformas
 
     return render_template(
         'relatorios.html',
@@ -160,10 +167,10 @@ def relatorios():
         custo_total_produtos=custo_total_produtos,
         lucro_produtos=lucro_produtos,
         valor_gasto_reposicoes=valor_gasto_reposicoes,
-        
-        receita_servicos=receita_outros_servicos,
-        custo_servicos=custo_outros_servicos,
-        lucro_servicos=lucro_outros_servicos,
+
+        receita_outros_servicos=receita_outros_servicos,
+        custo_outros_servicos=custo_outros_servicos,
+        lucro_outros_servicos=lucro_outros_servicos,
 
         receita_revendas=receita_revendas,
         custo_revendas=custo_revendas,
@@ -175,6 +182,8 @@ def relatorios():
         now=now,
         mes_inteiro=mes_inteiro
     )
+
+
 
 @main_bp.route('/edit_product/<int:id>', methods=['POST'])
 @login_required
