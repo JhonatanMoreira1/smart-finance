@@ -1,5 +1,5 @@
 from flask import render_template, request, redirect, url_for, flash, send_file, Blueprint
-from sqlalchemy import extract, text, func
+from sqlalchemy import extract, text, func, case
 from datetime import datetime
 from models import db, Produto, Entrada, Saida, Servico, Caixa
 from flask_login import login_required
@@ -92,6 +92,18 @@ def saidas():
 
         nova_saida = Saida(produto_id=produto_id, quantidade=quantidade, preco_unitario=preco_unitario, total_venda=total_venda, forma_pagamento=forma_pagamento, cliente=cliente)
         db.session.add(nova_saida)
+        db.session.flush() # Garante que nova_saida.id esteja disponível
+
+        if forma_pagamento and forma_pagamento.lower() == 'dinheiro':
+            entrada_caixa = Caixa(
+                tipo='Entrada',
+                valor=total_venda,
+                descricao=f'Venda: {produto.nome}',
+                origem_id=nova_saida.id,
+                origem_tipo='saida'
+            )
+            db.session.add(entrada_caixa)
+
         db.session.commit()
         flash('Saída registrada com sucesso!', 'success')
         return redirect(url_for('main.saidas'))
@@ -122,6 +134,27 @@ def relatorios():
     filtros_saida = filtros_data(Saida, 'data', dia, mes, ano)
     filtros_entrada = filtros_data(Entrada, 'data', dia, mes, ano)
     filtros_servico = filtros_data(Servico, 'data_hora', dia, mes, ano) + [Servico.status == 'Finalizado']
+
+    # --- Cálculos de Caixa e Pagamentos (Período Filtrado e Totais) ---
+    # Saldo total do caixa (não é afetado pelo filtro de data)
+    total_entradas_caixa = db.session.query(func.sum(Caixa.valor)).filter(Caixa.tipo == 'Entrada').scalar() or 0.0
+    total_retiradas_caixa = db.session.query(func.sum(Caixa.valor)).filter(Caixa.tipo == 'Retirada').scalar() or 0.0
+    saldo_caixa = total_entradas_caixa - total_retiradas_caixa
+
+    # Totais por forma de pagamento (afetados pelo filtro de data)
+    pagamentos = ['dinheiro', 'pix', 'crédito', 'débito']
+    totais_pagamento = {}
+    for p in pagamentos:
+        total_saidas = db.session.query(func.sum(Saida.total_venda)).filter(*filtros_saida, Saida.forma_pagamento.ilike(f'%{p}%')).scalar() or 0.0
+        
+        total_servicos_query = db.session.query(func.sum(
+            case(
+                (Servico.tipo == 'Venda de Aparelho', Servico.preco_aparelho),
+                else_=Servico.mao_de_obra + Servico.custo_pecas
+            )
+        )).filter(*filtros_servico, Servico.forma_pagamento.ilike(f'%{p}%')).scalar() or 0.0
+        
+        totais_pagamento[p] = total_saidas + total_servicos_query
 
     # Produtos
     saidas_no_periodo = Saida.query.filter(*filtros_saida).all()
@@ -163,6 +196,8 @@ def relatorios():
 
     return render_template(
         'relatorios.html',
+        saldo_caixa=saldo_caixa,
+        totais_pagamento=totais_pagamento,
         receita_total_produtos=receita_total_produtos,
         custo_total_produtos=custo_total_produtos,
         lucro_produtos=lucro_produtos,
@@ -257,6 +292,17 @@ def delete_entrada(id):
     flash('Entrada deletada com sucesso!', 'success')
     return redirect(url_for('main.entradas'))
 
+
+def get_total_servico(servico):
+    """Calcula o valor total de um serviço."""
+    if servico.tipo == 'Venda de Aparelho':
+        return servico.preco_aparelho or 0.0
+    elif servico.tipo == 'Manutenção':
+        # Soma o custo das peças e a mão de obra, tratando valores None como 0
+        return (servico.custo_pecas or 0.0) + (servico.mao_de_obra or 0.0)
+    return 0.0
+
+
 @main_bp.route('/servicos', methods=['GET', 'POST'])
 @login_required
 def servicos():
@@ -286,6 +332,19 @@ def servicos():
                                custo_pecas=custo_pecas, mao_de_obra=mao_de_obra,
                                preco_aparelho=preco_aparelho, status=status, forma_pagamento=forma_pagamento, cliente=cliente)
         db.session.add(novo_servico)
+        db.session.flush()
+
+        if status == 'Finalizado' and forma_pagamento and forma_pagamento.lower() == 'dinheiro':
+            valor_total = get_total_servico(novo_servico)
+            entrada_caixa = Caixa(
+                tipo='Entrada',
+                valor=valor_total,
+                descricao=f'Serviço: {novo_servico.servico_descricao.replace("[REVENDA]", "").strip()}',
+                origem_id=novo_servico.id,
+                origem_tipo='servico'
+            )
+            db.session.add(entrada_caixa)
+
         db.session.commit()
         flash('Serviço adicionado com sucesso!', 'success')
         return redirect(url_for('main.servicos'))
@@ -375,6 +434,17 @@ def edit_saida(id):
     saida.total_venda = saida.quantidade * saida.preco_unitario
     saida.forma_pagamento = request.form['forma_pagamento']
     saida.cliente = request.form['cliente']
+
+    transacao_caixa = Caixa.query.filter_by(origem_id=id, origem_tipo='saida').first()
+    forma_pagamento_nova = saida.forma_pagamento
+
+    if forma_pagamento_nova and forma_pagamento_nova.lower() == 'dinheiro':
+        if transacao_caixa:
+            transacao_caixa.valor = saida.total_venda
+        else:
+            db.session.add(Caixa(tipo='Entrada', valor=saida.total_venda, descricao=f'Venda: {produto.nome}', origem_id=id, origem_tipo='saida'))
+    elif forma_pagamento_antiga and forma_pagamento_antiga.lower() == 'dinheiro' and transacao_caixa:
+        db.session.delete(transacao_caixa)
     
     db.session.commit()
     flash('Saída atualizada com sucesso!', 'success')
@@ -387,6 +457,7 @@ def delete_saida(id):
     saida = Saida.query.get_or_404(id)
     produto = Produto.query.get(saida.produto_id)
     produto.estoque += saida.quantidade
+    Caixa.query.filter_by(origem_id=id, origem_tipo='saida').delete()
     db.session.delete(saida)
     db.session.commit()
     flash('Saída deletada com sucesso!', 'success')
@@ -436,6 +507,17 @@ def edit_servico(id):
         servico.data_hora = datetime.now(timezone.utc)
 
     servico.status = novo_status
+
+    transacao_caixa = Caixa.query.filter_by(origem_id=id, origem_tipo='servico').first()
+    valor_total = get_total_servico(servico)
+
+    if servico.status == 'Finalizado' and servico.forma_pagamento and servico.forma_pagamento.lower() == 'dinheiro':
+        if transacao_caixa:
+            transacao_caixa.valor = valor_total
+        else:
+            db.session.add(Caixa(tipo='Entrada', valor=valor_total, descricao=f'Serviço: {servico.servico_descricao.replace("[REVENDA]", "").strip()}', origem_id=id, origem_tipo='servico'))
+    elif transacao_caixa:
+        db.session.delete(transacao_caixa)
     
     db.session.commit()
     flash('Serviço atualizado com sucesso!', 'success')
@@ -444,6 +526,7 @@ def edit_servico(id):
 @main_bp.route('/delete_servico/<int:id>', methods=['POST'])
 @login_required
 def delete_servico(id):
+    Caixa.query.filter_by(origem_id=id, origem_tipo='servico').delete()
     servico = Servico.query.get_or_404(id)
     db.session.delete(servico)
     db.session.commit()
