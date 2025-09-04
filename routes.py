@@ -1,7 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash, send_file, Blueprint
-from sqlalchemy import extract, text
+from sqlalchemy import extract, text, func
 from datetime import datetime
-from models import db, Produto, Entrada, Saida, Servico
+from models import db, Produto, Entrada, Saida, Servico, Caixa
 from flask_login import login_required
 from utils import filtros_data, to_float
 import os
@@ -292,6 +292,44 @@ def servicos():
 
     servicos = Servico.query.order_by(Servico.data_hora.desc()).all()
     return render_template('servicos.html', servicos=servicos)
+
+
+@main_bp.route('/caixa', methods=['GET', 'POST'])
+@login_required
+def caixa():
+    if request.method == 'POST':
+        tipo = request.form.get('tipo')
+        valor = to_float(request.form.get('valor'))
+        descricao = request.form.get('descricao')
+        if not valor or not descricao:
+            flash('Valor e descrição são obrigatórios.', 'danger')
+            return redirect(url_for('main.caixa'))
+        nova_transacao = Caixa(tipo=tipo, valor=valor, descricao=descricao)
+        db.session.add(nova_transacao)
+        db.session.commit()
+        flash(f'{tipo.capitalize()} registrada com sucesso!', 'success')
+        return redirect(url_for('main.caixa'))
+
+    transacoes = Caixa.query.order_by(Caixa.data.desc()).all()
+    total_entradas = db.session.query(func.sum(Caixa.valor)).filter(Caixa.tipo == 'Entrada').scalar() or 0.0
+    total_retiradas = db.session.query(func.sum(Caixa.valor)).filter(Caixa.tipo == 'Retirada').scalar() or 0.0
+    saldo_caixa = total_entradas - total_retiradas
+    return render_template('caixa.html', transacoes=transacoes, saldo_caixa=saldo_caixa)
+
+@main_bp.route('/caixa/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_caixa(id):
+    transacao = Caixa.query.get_or_404(id)
+    if transacao.origem_tipo:
+        flash('Não é possível deletar uma transação automática.', 'danger')
+    else:
+        db.session.delete(transacao)
+        db.session.commit()
+        flash('Transação manual deletada com sucesso!', 'success')
+    return redirect(url_for('main.caixa'))
+
+
+# --- Rota de API Apenas para Produtos ---
 
 
 @main_bp.route('/nota_servico/<int:servico_id>')

@@ -49,3 +49,13 @@ class Servico(db.Model):
     status = Column(String(50), default='Iniciado')
     forma_pagamento = Column(String(100))
     cliente = Column(String(100))
+
+class Caixa(db.Model):
+    __tablename__ = 'caixa'
+    id = Column(Integer, primary_key=True)
+    data = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    tipo = Column(String(10), nullable=False)  # 'Entrada' ou 'Retirada'
+    valor = Column(Float, nullable=False)
+    descricao = Column(String(255), nullable=False)
+    origem_id = Column(Integer, nullable=True)
+    origem_tipo = Column(String(50), nullable=True) # 'saida' ou 'servico'
