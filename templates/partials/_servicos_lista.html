@@ -1,0 +1,37 @@
+{% for servico in servicos %}
+<tr>
+  <td>{{ servico.id }}</td>
+  <td>{{ servico.data_hora | localtime }}</td>
+  <td>{{ servico.servico_descricao.replace('[REVENDA]', '') }}</td>
+  <td>{{ servico.aparelho or '-' }}</td>
+  <td>{{ servico.tipo }}</td>
+  <td>{{ servico.custo_pecas|round(2) }}</td>
+  <td>{{ servico.mao_de_obra|round(2) }}</td>
+  <td>{{ servico.preco_aparelho|round(2) }}</td>
+  <td>
+    <span class="badge {% if servico.status == 'Iniciado' %}bg-secondary{% else %}bg-success{% endif %}">
+      {{ servico.status }}
+    </span>
+  </td>
+  <td>{{ servico.forma_pagamento }}</td>
+  <td>{{ servico.cliente }}</td>
+  <td>
+    <div class="d-flex gap-2 align-items-stretch">
+      <form class="w-100">
+        <button type="button" class="btn btn-light btn-sm w-100 h-100 border border-dark"
+          onclick="imprimirNota({{ servico.id }})">🖨️Imprimir</button>
+      </form>
+      <form class="w-100">
+        <button type="button" class="btn btn-warning btn-sm w-100 h-100" data-bs-toggle="modal"
+          data-bs-target="#editServicoModal{{ servico.id }}">
+          Editar
+        </button>
+      </form>
+      <form action="{{ url_for('main.delete_servico', id=servico.id) }}" method="post"
+        onsubmit="return confirm('Tem certeza que deseja deletar este serviço?');" class="w-100">
+        <button type="submit" class="btn btn-danger btn-sm w-100 h-100">Deletar</button>
+      </form>
+    </div>
+  </td>
+</tr>
+{% endfor %}

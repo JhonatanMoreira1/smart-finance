@@ -1,0 +1,19 @@
+{% for transacao in transacoes %}
+<tr>
+    <td>{{ transacao.data | localtime }}</td>
+    <td>
+        <span class="badge {% if transacao.tipo == 'Entrada' %}bg-success{% else %}bg-danger{% endif %}">
+            {{ transacao.tipo }}
+        </span>
+    </td>
+    <td>{{ transacao.descricao }}</td>
+    <td>{{ "%.2f"|format(transacao.valor) }}</td>
+    <td>
+        {% if not transacao.origem_tipo %}
+        <form action="{{ url_for('main.delete_caixa', id=transacao.id) }}" method="post" onsubmit="return confirm('Tem certeza que deseja deletar esta transação manual?');">
+            <button type="submit" class="btn btn-danger btn-sm">Deletar</button>
+        </form>
+        {% endif %}
+    </td>
+</tr>
+{% endfor %}

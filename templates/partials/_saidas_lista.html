@@ -1,0 +1,33 @@
+{% for saida in saidas %}
+<tr>
+  <td>{{ saida.produto.id }}</td>
+  <td>{{ saida.data | localtime }}</td>
+  <td>{{ saida.produto.nome }}</td>
+  <td>{{ saida.quantidade }}</td>
+  <td>{{ saida.preco_unitario }}</td>
+  <td>{{ saida.total_venda }}</td>
+  <td>{{ saida.forma_pagamento }}</td>
+  <td>{{ saida.cliente }}</td>
+  <td>
+    <div class="d-flex gap-2 align-items-stretch">
+      <form class="w-100">
+        <button type="button" class="btn btn-light btn-sm w-100 h-100 border border-dark"
+          onclick="imprimirNota({{ saida.id }})">🖨️Imprimir</button>
+      </form>
+
+      <form class="w-100">
+        <button type="button" class="btn btn-warning btn-sm w-100 h-100" data-bs-toggle="modal"
+          data-bs-target="#editSaidaModal{{ saida.id }}">
+          Editar
+        </button>
+      </form>
+
+      <form class="w-100" action="{{ url_for('main.delete_saida', id=saida.id) }}" method="post"
+        style="display:inline;"
+        onsubmit="return confirm('Tem certeza que deseja deletar esta saída? Isso afetará o estoque do produto.');">
+        <button type="submit" class="btn btn-danger btn-sm w-100 h-100">Deletar</button>
+      </form>
+    </div>
+  </td>
+</tr>
+{% endfor %}

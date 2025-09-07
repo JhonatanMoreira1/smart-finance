@@ -1,0 +1,20 @@
+{% for produto in produtos %}
+<tr>
+  <td>{{ produto.id }}</td>
+  <td>{{ produto.nome }}</td>
+  <td>{{ produto.tipo }}</td>
+  <td>{{ produto.preco_venda }}</td>
+  <td>{{ produto.custo }}</td>
+  <td>{{ produto.estoque }}</td>
+  <td>
+    <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal"
+      data-bs-target="#editProdutoModal{{ produto.id }}">
+      Editar
+    </button>
+    <form action="{{ url_for('main.delete_produto', id=produto.id) }}" method="post" style="display:inline;"
+      onsubmit="return confirm('Tem certeza que deseja deletar este produto?');">
+      <button type="submit" class="btn btn-danger btn-sm">Deletar</button>
+    </form>
+  </td>
+</tr>
+{% endfor %}

@@ -107,232 +107,121 @@
       <th>Ações</th>
     </tr>
   </thead>
-  <tbody>
-    {% for servico in servicos %}
-    <tr>
-      <td>{{ servico.id }}</td>
-      <td>{{ servico.data_hora | localtime }}</td>
-      <td>{{ servico.servico_descricao.replace('[REVENDA]', '') }}</td>
-      <td>{{ servico.aparelho or '-' }}</td>
-      <td>{{ servico.tipo }}</td>
-      <td>{{ servico.custo_pecas|round(2) }}</td>
-      <td>{{ servico.mao_de_obra|round(2) }}</td>
-      <td>{{ servico.preco_aparelho|round(2) }}</td>
-      <td>
-        <span class="badge {% if servico.status == 'Iniciado' %}bg-secondary{% else %}bg-success{% endif %}">
-          {{ servico.status }}
-        </span>
-      </td>
-      <td>{{ servico.forma_pagamento }}</td>
-      <td>{{ servico.cliente }}</td>
-      <td>
-        <div class="d-flex gap-2 align-items-stretch">
-
-          <form class="w-100">
-            <button type="button" class="btn btn-light btn-sm w-100 h-100 border border-dark"
-              onclick="imprimirNota({{ servico.id }})">🖨️Imprimir</button>
-          </form>
-
-
-          <form class="w-100">
-            <button type="button" class="btn btn-warning btn-sm w-100 h-100" data-bs-toggle="modal"
-              data-bs-target="#editServicoModal{{ servico.id }}">
-              Editar
-            </button>
-          </form>
-
-          <form action="{{ url_for('main.delete_servico', id=servico.id) }}" method="post"
-            onsubmit="return confirm('Tem certeza que deseja deletar este serviço?');" class="w-100">
-            <button type="submit" class="btn btn-danger btn-sm w-100 h-100">Deletar</button>
-          </form>
-
-        </div>
-
-      </td>
-
-    </tr>
-
-    <!-- Modal de Edição de Serviço -->
-    <div class="modal fade" id="editServicoModal{{ servico.id }}" tabindex="-1"
-      aria-labelledby="editServicoModalLabel{{ servico.id }}" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="editServicoModalLabel{{ servico.id }}">Editar Serviço</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <form action="{{ url_for('main.edit_servico', id=servico.id) }}" method="post">
-              <div class="mb-3">
-                <label for="servico_descricao" class="form-label">Descrição do Serviço</label>
-                <input type="text" class="form-control" name="servico_descricao"
-                  value="{{ servico.servico_descricao.replace('[REVENDA]', '') }}" required>
-              </div>
-              <div class="mb-3">
-                <label for="aparelho" class="form-label">Aparelho</label>
-                <input type="text" class="form-control" name="aparelho" value="{{ servico.aparelho or '' }}">
-              </div>
-              <div class="mb-3">
-                <label for="tipo" class="form-label">Tipo</label>
-                <select class="form-select edit_tipo_servico" name="tipo" data-servico-id="{{ servico.id }}" required>
-                  <option value="Manutenção" {% if servico.tipo=='Manutenção' %}selected{% endif %}>Manutenção</option>
-                  <option value="Venda de Aparelho" {% if servico.tipo=='Venda de Aparelho' %}selected{% endif %}>Venda
-                    de Aparelho</option>
-                </select>
-              </div>
-
-              <div class="mb-3 edit_subtipo_venda_div" style="display:none;" data-servico-id="{{ servico.id }}">
-                <label class="form-label">Subtipo de Venda</label>
-                <div>
-                  <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="subtipo_venda_{{ servico.id }}"
-                      id="edit_subtipo_reforma_{{ servico.id }}" value="Reforma" {% if not
-                      servico.servico_descricao.startswith('[REVENDA]') %}checked{% endif %}>
-                    <label class="form-check-label" for="edit_subtipo_reforma_{{ servico.id }}">Reforma</label>
-                  </div>
-                  <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="subtipo_venda_{{ servico.id }}"
-                      id="edit_subtipo_revenda_{{ servico.id }}" value="Revenda" {% if
-                      servico.servico_descricao.startswith('[REVENDA]') %}checked{% endif %}>
-                    <label class="form-check-label" for="edit_subtipo_revenda_{{ servico.id }}">Revenda</label>
-                  </div>
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <label for="custo_pecas" class="form-label">Custos e/ou peças</label>
-                <input type="number" step="0.01" class="form-control" name="custo_pecas"
-                  value="{{ servico.custo_pecas }}">
-              </div>
-              <div class="mb-3 edit_mao_de_obra_div" data-servico-id="{{ servico.id }}">
-                <label for="mao_de_obra" class="form-label">Mão de
-                  Obra</label>
-                <input type="number" step="0.01" class="form-control" name="mao_de_obra"
-                  value="{{ servico.mao_de_obra }}">
-              </div>
-              <div class="mb-3 edit_preco_aparelho_div" style="display:none;" data-servico-id="{{ servico.id }}">
-                <label for="preco_aparelho" class="form-label">Preço do
-                  Aparelho</label>
-                <input type="number" step="0.01" class="form-control" name="preco_aparelho"
-                  value="{{ servico.preco_aparelho }}">
-              </div>
-
-              <div class="mb-3 edit_status_radios_div" data-servico-id="{{ servico.id }}">
-                <label class="form-label">Status</label>
-                <div>
-                  <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="status"
-                      id="edit_status_iniciado_{{ servico.id }}" value="Iniciado" {% if servico.status=='Iniciado'
-                      %}checked{% endif %}>
-                    <label class="form-check-label" for="edit_status_iniciado_{{ servico.id }}">Iniciado</label>
-                  </div>
-                  <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="status"
-                      id="edit_status_finalizado_{{ servico.id }}" value="Finalizado" {% if servico.status=='Finalizado'
-                      %}checked{% endif %}>
-                    <label class="form-check-label" for="edit_status_finalizado_{{ servico.id }}">Finalizado</label>
-                  </div>
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <label for="edit_forma_pagamento_{{ servico.id }}" class="form-label">Forma de Pagamento</label>
-                <input type="text" class="form-control" id="edit_forma_pagamento_{{ servico.id }}"
-                  name="forma_pagamento" value="{{ servico.forma_pagamento or '' }}">
-              </div>
-              <div class="mb-3">
-                <label for="edit_cliente_{{ servico.id }}" class="form-label">Cliente</label>
-                <input type="text" class="form-control" id="edit_cliente_{{ servico.id }}" name="cliente"
-                  value="{{ servico.cliente or '' }}">
-              </div>
-              <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-    {% endfor %}
-    <script>
-      function imprimirNota(servicoId) {
-        const url = `/nota_servico/${servicoId}`;
-        const janela = window.open(url, "_blank", "width=350,height=500");
-      }
-
-      $(document).ready(function () {
-        // --- Lógica para o Modal de Adicionar ---
-        function updateDescricao() {
-            const tipo = $('#tipo_servico').val();
-            const subtipo = $('input[name="subtipo_venda"]:checked').val();
-            const descricaoInput = $('#servico_descricao');
-
-            if (tipo === 'Venda de Aparelho') {
-                if (subtipo === 'Revenda') {
-                    descricaoInput.val('Revenda de Aparelho');
-                } else {
-                    descricaoInput.val('Venda de Aparelho');
-                }
-            } else {
-                descricaoInput.val('');
-            }
-        }
-
-        $('#tipo_servico').on('change', function () {
-          const tipo = $(this).val();
-          const subtipoDiv = $('#subtipo_venda_div');
-          const valorDinamicoLabel = $('#valor_dinamico_label');
-          const valorDinamicoInput = $('#valor_dinamico');
-          const statusDiv = $('#status_radios_div');
-
-          if (tipo === 'Venda de Aparelho') {
-            subtipoDiv.show();
-            valorDinamicoLabel.text('Preço do Aparelho');
-            valorDinamicoInput.attr('name', 'preco_aparelho');
-            statusDiv.hide();
-            $('#status_finalizado').prop('checked', true);
-          } else {
-            subtipoDiv.hide();
-            valorDinamicoLabel.text('Mão de Obra');
-            valorDinamicoInput.attr('name', 'mao_de_obra');
-            statusDiv.show();
-            $('#status_iniciado').prop('checked', true);
-          }
-          updateDescricao(); // Atualiza a descrição quando o tipo muda
-        }).trigger('change');
-
-        $('input[name="subtipo_venda"]').on('change', updateDescricao); // Atualiza a descrição quando o subtipo muda
-
-        // --- Lógica para os Modais de Edição ---
-        $('.edit_tipo_servico').on('change', function () {
-          const servicoId = $(this).data('servico-id');
-          const tipo = $(this).val();
-          const subtipoDiv = $(`.edit_subtipo_venda_div[data-servico-id='${servicoId}']`);
-          const maoDeObraDiv = $(`.edit_mao_de_obra_div[data-servico-id='${servicoId}']`);
-          const precoAparelhoDiv = $(`.edit_preco_aparelho_div[data-servico-id='${servicoId}']`);
-          const statusDiv = $(`.edit_status_radios_div[data-servico-id='${servicoId}']`);
-
-          if (tipo === 'Venda de Aparelho') {
-            subtipoDiv.show();
-            maoDeObraDiv.hide();
-            precoAparelhoDiv.show();
-            precoAparelhoDiv.find('input').attr('name', 'preco_aparelho');
-            maoDeObraDiv.find('input').removeAttr('name');
-            statusDiv.hide();
-            $(`#edit_status_finalizado_${servicoId}`).prop('checked', true);
-          } else {
-            subtipoDiv.hide();
-            maoDeObraDiv.show();
-            precoAparelhoDiv.hide();
-            maoDeObraDiv.find('input').attr('name', 'mao_de_obra');
-            precoAparelhoDiv.find('input').removeAttr('name');
-            statusDiv.show();
-          }
-        });
-
-        // Dispara o evento 'change' para todos os modais de edição ao carregar a página
-        // para garantir que o estado inicial esteja correto.
-        $('.edit_tipo_servico').trigger('change');
-      });
-    </script>
+  <tbody id="service-list">
+    {% include 'partials/_servicos_lista.html' %}
   </tbody>
 </table>
+
+<div id="modal-container">
+    {% include 'partials/_servicos_modals.html' %}
+</div>
+
+{% if pagination.has_next %}
+<div class="text-center my-4">
+    <button id="ver-mais-btn" class="btn btn-secondary" data-next-page="{{ pagination.next_num }}">Ver Mais</button>
+</div>
+{% endif %}
+
+<script>
+function imprimirNota(servicoId) {
+    const url = `/nota_servico/${servicoId}`;
+    const janela = window.open(url, "_blank", "width=350,height=500");
+}
+
+$(document).ready(function () {
+    // --- Lógica para o Modal de Adicionar ---
+    function updateDescricao() {
+        const tipo = $('#tipo_servico').val();
+        const subtipo = $('input[name="subtipo_venda"]:checked').val();
+        const descricaoInput = $('#servico_descricao');
+
+        if (tipo === 'Venda de Aparelho') {
+            if (subtipo === 'Revenda') {
+                descricaoInput.val('Revenda de Aparelho');
+            } else {
+                descricaoInput.val('Venda de Aparelho');
+            }
+        } else {
+            descricaoInput.val('');
+        }
+    }
+
+    $('#tipo_servico').on('change', function () {
+      const tipo = $(this).val();
+      const subtipoDiv = $('#subtipo_venda_div');
+      const valorDinamicoLabel = $('#valor_dinamico_label');
+      const valorDinamicoInput = $('#valor_dinamico');
+      const statusDiv = $('#status_radios_div');
+
+      if (tipo === 'Venda de Aparelho') {
+        subtipoDiv.show();
+        valorDinamicoLabel.text('Preço do Aparelho');
+        valorDinamicoInput.attr('name', 'preco_aparelho');
+        statusDiv.hide();
+        $('#status_finalizado').prop('checked', true);
+      } else {
+        subtipoDiv.hide();
+        valorDinamicoLabel.text('Mão de Obra');
+        valorDinamicoInput.attr('name', 'mao_de_obra');
+        statusDiv.show();
+        $('#status_iniciado').prop('checked', true);
+      }
+      updateDescricao();
+    }).trigger('change');
+
+    $('input[name="subtipo_venda"]').on('change', updateDescricao);
+
+    // --- LÓGICA REATORADA PARA MODAIS DE EDIÇÃO (COM DELEGAÇÃO DE EVENTOS) ---
+    $('#modal-container').on('change', '.edit_tipo_servico', function () {
+      const servicoId = $(this).data('servico-id');
+      const tipo = $(this).val();
+      const subtipoDiv = $(`.edit_subtipo_venda_div[data-servico-id='${servicoId}']`);
+      const maoDeObraDiv = $(`.edit_mao_de_obra_div[data-servico-id='${servicoId}']`);
+      const precoAparelhoDiv = $(`.edit_preco_aparelho_div[data-servico-id='${servicoId}']`);
+      const statusDiv = $(`.edit_status_radios_div[data-servico-id='${servicoId}']`);
+
+      if (tipo === 'Venda de Aparelho') {
+        subtipoDiv.show();
+        maoDeObraDiv.hide();
+        precoAparelhoDiv.show();
+        precoAparelhoDiv.find('input').attr('name', 'preco_aparelho');
+        maoDeObraDiv.find('input').removeAttr('name');
+        statusDiv.hide();
+        $(`#edit_status_finalizado_${servicoId}`).prop('checked', true);
+      } else {
+        subtipoDiv.hide();
+        maoDeObraDiv.show();
+        precoAparelhoDiv.hide();
+        maoDeObraDiv.find('input').attr('name', 'mao_de_obra');
+        precoAparelhoDiv.find('input').removeAttr('name');
+        statusDiv.show();
+      }
+    });
+
+    // Dispara o evento change para os modais que já existem na página inicial
+    $('.edit_tipo_servico').trigger('change');
+
+    // --- Lógica do "Ver Mais" ---
+    $('#ver-mais-btn').on('click', function() {
+        var button = $(this);
+        var nextPage = button.data('next-page');
+        var url = `{{ url_for('main.servicos') }}?page=${nextPage}`;
+
+        $.getJSON(url, function(data) {
+            if (data.table_html.trim() !== '') {
+                $('#service-list').append(data.table_html);
+                $('#modal-container').append(data.modals_html);
+                // Dispara o evento change para os seletores dos novos modais carregados
+                $('#modal-container .edit_tipo_servico').trigger('change');
+                button.data('next-page', nextPage + 1);
+            }
+
+            if (!data.has_next) {
+                button.hide();
+            }
+        });
+    });
+});
+</script>
+
 {% endblock %}

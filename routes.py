@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash, send_file, Blueprint
+from flask import render_template, request, redirect, url_for, flash, send_file, Blueprint, jsonify
 from sqlalchemy import extract, text, func, case
 from datetime import datetime
 from models import db, Produto, Entrada, Saida, Servico, Caixa
@@ -19,6 +19,7 @@ def index():
 @login_required
 def produtos():
     if request.method == 'POST':
+        # Lógica para adicionar novo produto (inalterada)
         nome = request.form['nome']
         preco_venda = float(request.form['preco_venda'])
         custo = float(request.form['custo'])
@@ -29,19 +30,34 @@ def produtos():
         flash('Produto adicionado com sucesso!', 'success')
         return redirect(url_for('main.produtos'))
     
+    page = request.args.get('page', 1, type=int)
     query = request.args.get('q')
+    
     if query:
         produtos_query = Produto.query.filter(Produto.nome.ilike(f'%{query}%'))
     else:
         produtos_query = Produto.query
 
-    produtos = produtos_query.order_by(Produto.nome).all()
-    
-    custo_total_estoque = sum(p.custo * p.estoque for p in produtos)
-    valor_total_estoque = sum(p.preco_venda * p.estoque for p in produtos)
+    pagination = produtos_query.order_by(Produto.nome).paginate(page=page, per_page=20, error_out=False)
+    produtos_paginados = pagination.items
+
+    if request.args.get('page'): # Se for uma requisição AJAX para "Ver Mais"
+        table_html = render_template('partials/_produtos_lista.html', produtos=produtos_paginados)
+        modals_html = render_template('partials/_produtos_modals.html', produtos=produtos_paginados)
+        return jsonify({
+            'table_html': table_html,
+            'modals_html': modals_html,
+            'has_next': pagination.has_next
+        })
+
+    # Para a carga inicial da página, calculamos os totais com base em todos os produtos filtrados
+    produtos_totais = produtos_query.all()
+    custo_total_estoque = sum(p.custo * p.estoque for p in produtos_totais)
+    valor_total_estoque = sum(p.preco_venda * p.estoque for p in produtos_totais)
     
     return render_template('produtos.html', 
-                           produtos=produtos, 
+                           produtos=produtos_paginados, 
+                           pagination=pagination,
                            custo_total_estoque=custo_total_estoque, 
                            valor_total_estoque=valor_total_estoque,
                            query=query)
@@ -50,6 +66,7 @@ def produtos():
 @login_required
 def entradas():
     if request.method == 'POST':
+        # Lógica para adicionar nova entrada (inalterada)
         produto_id = request.form['produto_id']
         quantidade = int(request.form['quantidade'])
         custo_unitario = float(request.form['custo_unitario'])
@@ -64,8 +81,21 @@ def entradas():
         flash('Entrada registrada com sucesso!', 'success')
         return redirect(url_for('main.entradas'))
 
-    entradas = Entrada.query.order_by(Entrada.data.desc()).all()
-    produtos = Produto.query.all()
+    page = request.args.get('page', 1, type=int)
+    pagination = Entrada.query.order_by(Entrada.data.desc()).paginate(page=page, per_page=20, error_out=False)
+    entradas_paginadas = pagination.items
+
+    if request.args.get('page'): # Requisição AJAX
+        table_html = render_template('partials/_entradas_lista.html', entradas=entradas_paginadas)
+        modals_html = render_template('partials/_entradas_modals.html', entradas=entradas_paginadas)
+        return jsonify({
+            'table_html': table_html,
+            'modals_html': modals_html,
+            'has_next': pagination.has_next
+        })
+
+    # Carga inicial da página
+    produtos_all = Produto.query.order_by(Produto.nome).all()
     
     mes_atual = datetime.now().month
     ano_atual = datetime.now().year
@@ -74,12 +104,17 @@ def entradas():
         extract('year', Entrada.data) == ano_atual
     ).scalar() or 0
     
-    return render_template('entradas.html', entradas=entradas, produtos=produtos, valor_gasto_reposicoes=valor_gasto_reposicoes)
+    return render_template('entradas.html', 
+                           entradas=entradas_paginadas, 
+                           pagination=pagination,
+                           produtos_all=produtos_all, 
+                           valor_gasto_reposicoes=valor_gasto_reposicoes)
 
 @main_bp.route('/saidas', methods=['GET', 'POST'])
 @login_required
 def saidas():
     if request.method == 'POST':
+        # Lógica para adicionar nova saída (inalterada)
         produto_id = request.form['produto_id']
         quantidade = int(request.form['quantidade'])
         preco_unitario = float(request.form['preco_unitario'])
@@ -108,9 +143,25 @@ def saidas():
         flash('Saída registrada com sucesso!', 'success')
         return redirect(url_for('main.saidas'))
 
-    saidas = Saida.query.order_by(Saida.data.desc()).all()
-    produtos = Produto.query.all()
-    return render_template('saidas.html', saidas=saidas, produtos=produtos)
+    page = request.args.get('page', 1, type=int)
+    pagination = Saida.query.order_by(Saida.data.desc()).paginate(page=page, per_page=20, error_out=False)
+    saidas_paginadas = pagination.items
+
+    if request.args.get('page'): # Requisição AJAX
+        table_html = render_template('partials/_saidas_lista.html', saidas=saidas_paginadas)
+        modals_html = render_template('partials/_saidas_modals.html', saidas=saidas_paginadas)
+        return jsonify({
+            'table_html': table_html,
+            'modals_html': modals_html,
+            'has_next': pagination.has_next
+        })
+
+    # Carga inicial da página
+    produtos_all = Produto.query.order_by(Produto.nome).all()
+    return render_template('saidas.html', 
+                           saidas=saidas_paginadas, 
+                           pagination=pagination,
+                           produtos_all=produtos_all)
 
 
 
@@ -307,6 +358,7 @@ def get_total_servico(servico):
 @login_required
 def servicos():
     if request.method == 'POST':
+        # Lógica para adicionar novo serviço (inalterada)
         servico_descricao = request.form['servico_descricao']
         aparelho = request.form.get('aparelho')
         tipo = request.form.get('tipo')
@@ -349,14 +401,30 @@ def servicos():
         flash('Serviço adicionado com sucesso!', 'success')
         return redirect(url_for('main.servicos'))
 
-    servicos = Servico.query.order_by(Servico.data_hora.desc()).all()
-    return render_template('servicos.html', servicos=servicos)
+    page = request.args.get('page', 1, type=int)
+    pagination = Servico.query.order_by(Servico.data_hora.desc()).paginate(page=page, per_page=20, error_out=False)
+    servicos_paginados = pagination.items
+
+    if request.args.get('page'): # Requisição AJAX
+        table_html = render_template('partials/_servicos_lista.html', servicos=servicos_paginados)
+        modals_html = render_template('partials/_servicos_modals.html', servicos=servicos_paginados)
+        return jsonify({
+            'table_html': table_html,
+            'modals_html': modals_html,
+            'has_next': pagination.has_next
+        })
+
+    # Carga inicial da página
+    return render_template('servicos.html', 
+                           servicos=servicos_paginados, 
+                           pagination=pagination)
 
 
 @main_bp.route('/caixa', methods=['GET', 'POST'])
 @login_required
 def caixa():
     if request.method == 'POST':
+        # Lógica para adicionar transação (inalterada)
         tipo = request.form.get('tipo')
         valor = to_float(request.form.get('valor'))
         descricao = request.form.get('descricao')
@@ -369,11 +437,28 @@ def caixa():
         flash(f'{tipo.capitalize()} registrada com sucesso!', 'success')
         return redirect(url_for('main.caixa'))
 
-    transacoes = Caixa.query.order_by(Caixa.data.desc()).all()
+    page = request.args.get('page', 1, type=int)
+    pagination = Caixa.query.order_by(Caixa.data.desc()).paginate(page=page, per_page=20, error_out=False)
+    transacoes_paginadas = pagination.items
+
+    if request.args.get('page'): # Requisição AJAX
+        table_html = render_template('partials/_caixa_lista.html', transacoes=transacoes_paginadas)
+        # Como não há modais, não precisamos de modals_html, mas a estrutura JSON é mantida
+        return jsonify({
+            'table_html': table_html,
+            'modals_html': '',
+            'has_next': pagination.has_next
+        })
+
+    # Carga inicial da página
     total_entradas = db.session.query(func.sum(Caixa.valor)).filter(Caixa.tipo == 'Entrada').scalar() or 0.0
     total_retiradas = db.session.query(func.sum(Caixa.valor)).filter(Caixa.tipo == 'Retirada').scalar() or 0.0
     saldo_caixa = total_entradas - total_retiradas
-    return render_template('caixa.html', transacoes=transacoes, saldo_caixa=saldo_caixa)
+    
+    return render_template('caixa.html', 
+                           transacoes=transacoes_paginadas, 
+                           pagination=pagination,
+                           saldo_caixa=saldo_caixa)
 
 @main_bp.route('/caixa/delete/<int:id>', methods=['POST'])
 @login_required

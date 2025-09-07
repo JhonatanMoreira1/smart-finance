@@ -1,0 +1,18 @@
+{% for entrada in entradas %}
+<tr>
+  <td>{{ entrada.produto.id }}</td>
+  <td>{{ entrada.data | localtime }}</td>
+  <td>{{ entrada.produto.nome }}</td>
+  <td>{{ entrada.quantidade }}</td>
+  <td>{{ entrada.custo_unitario }}</td>
+  <td>{{ entrada.total_custo }}</td>
+  <td>
+    <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editEntradaModal{{ entrada.id }}">
+      Editar
+    </button>
+    <form action="{{ url_for('main.delete_entrada', id=entrada.id) }}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja deletar esta entrada? Isso afetará o estoque do produto.');">
+      <button type="submit" class="btn btn-danger btn-sm">Deletar</button>
+    </form>
+  </td>
+</tr>
+{% endfor %}

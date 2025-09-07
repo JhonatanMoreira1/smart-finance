@@ -19,7 +19,7 @@
   Adicionar Nova
 </button>
 
-<!-- Modal -->
+<!-- Modal de Adicionar -->
 <div class="modal fade" id="addEntradaModal" tabindex="-1" aria-labelledby="addEntradaModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -32,7 +32,7 @@
           <div class="mb-3">
             <label for="produto_id" class="form-label">Produto</label>
             <select class="form-select" id="produto_id_entrada" name="produto_id" required>
-              {% for produto in produtos %}
+              {% for produto in produtos_all %}
               <option value="{{ produto.id }}">{{ produto.nome }}</option>
               {% endfor %}
             </select>
@@ -54,31 +54,11 @@
 
 <script>
   function matchCustom(params, data) {
-    // Se a barra de pesquisa estiver vazia, retorna todos os resultados
-    if ($.trim(params.term) === '') {
+    if ($.trim(params.term) === '') { return data; }
+    if (typeof data.text === 'undefined') { return null; }
+    if (data.text.toUpperCase().indexOf(params.term.toUpperCase()) > -1) {
       return data;
     }
-
-    // Não busca em "filhos" de grupos de opções
-    if (data.children && data.children.length > 0) {
-      var matchedChildren = [];
-      $.each(data.children, function(idx, child) {
-        if (matchCustom(params, child)) {
-          matchedChildren.push(child);
-        }
-      });
-
-      if (matchedChildren.length) {
-        var modifiedData = $.extend({}, data, true);
-        modifiedData.children = matchedChildren;
-        return modifiedData;
-      }
-    } else if (data.text.toUpperCase().indexOf(params.term.toUpperCase()) > -1) {
-      // Corresponde se o termo de busca estiver em qualquer parte do texto
-      return data;
-    }
-
-    // Retorna null se não houver correspondência
     return null;
   }
 
@@ -102,54 +82,41 @@
       <th>Ações</th>
     </tr>
   </thead>
-  <tbody>
-    {% for entrada in entradas %}
-    <tr>
-      <td>{{ entrada.produto.id }}</td>
-      <td>{{ entrada.data | localtime }}</td>
-      <td>{{ entrada.produto.nome }}</td>
-      <td>{{ entrada.quantidade }}</td>
-      <td>{{ entrada.custo_unitario }}</td>
-      <td>{{ entrada.total_custo }}</td>
-      <td>
-        <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editEntradaModal{{ entrada.id }}">
-          Editar
-        </button>
-        <form action="{{ url_for('main.delete_entrada', id=entrada.id) }}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja deletar esta entrada? Isso afetará o estoque do produto.');">
-          <button type="submit" class="btn btn-danger btn-sm">Deletar</button>
-        </form>
-      </td>
-    </tr>
-
-    <!-- Modal de Edição -->
-    <div class="modal fade" id="editEntradaModal{{ entrada.id }}" tabindex="-1" aria-labelledby="editEntradaModalLabel{{ entrada.id }}" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="editEntradaModalLabel{{ entrada.id }}">Editar Entrada</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <form action="{{ url_for('main.edit_entrada', id=entrada.id) }}" method="post">
-              <div class="mb-3">
-                <label class="form-label">Produto</label>
-                <input type="text" class="form-control" value="{{ entrada.produto.nome }}" readonly>
-              </div>
-              <div class="mb-3">
-                <label for="quantidade" class="form-label">Quantidade</label>
-                <input type="number" class="form-control" name="quantidade" value="{{ entrada.quantidade }}" required>
-              </div>
-              <div class="mb-3">
-                <label for="custo_unitario" class="form-label">Custo Unitário</label>
-                <input type="number" step="0.01" class="form-control" name="custo_unitario" value="{{ entrada.custo_unitario }}" required>
-              </div>
-              <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-    {% endfor %}
+  <tbody id="entry-list">
+    {% include 'partials/_entradas_lista.html' %}
   </tbody>
 </table>
+
+<div id="modal-container">
+    {% include 'partials/_entradas_modals.html' %}
+</div>
+
+{% if pagination.has_next %}
+<div class="text-center my-4">
+    <button id="ver-mais-btn" class="btn btn-secondary" data-next-page="{{ pagination.next_num }}">Ver Mais</button>
+</div>
+{% endif %}
+
+<script>
+$(document).ready(function() {
+    $('#ver-mais-btn').on('click', function() {
+        var button = $(this);
+        var nextPage = button.data('next-page');
+        var url = `{{ url_for('main.entradas') }}?page=${nextPage}`;
+
+        $.getJSON(url, function(data) {
+            if (data.table_html.trim() !== '') {
+                $('#entry-list').append(data.table_html);
+                $('#modal-container').append(data.modals_html);
+                button.data('next-page', nextPage + 1);
+            }
+
+            if (!data.has_next) {
+                button.hide();
+            }
+        });
+    });
+});
+</script>
+
 {% endblock %}

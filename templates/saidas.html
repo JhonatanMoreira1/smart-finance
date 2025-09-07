@@ -8,7 +8,7 @@
   Adicionar Nova
 </button>
 
-<!-- Modal -->
+<!-- Modal de Adicionar -->
 <div class="modal fade" id="addSaidaModal" tabindex="-1" aria-labelledby="addSaidaModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -21,7 +21,7 @@
           <div class="mb-3">
             <label for="produto_id" class="form-label">Produto</label>
             <select class="form-select" id="produto_id_saida" name="produto_id" required>
-              {% for produto in produtos %}
+              {% for produto in produtos_all %}
               <option value="{{ produto.id }}">{{ produto.nome }}</option>
               {% endfor %}
             </select>
@@ -51,31 +51,11 @@
 
 <script>
   function matchCustom(params, data) {
-    // Se a barra de pesquisa estiver vazia, retorna todos os resultados
-    if ($.trim(params.term) === '') {
+    if ($.trim(params.term) === '') { return data; }
+    if (typeof data.text === 'undefined') { return null; }
+    if (data.text.toUpperCase().indexOf(params.term.toUpperCase()) > -1) {
       return data;
     }
-
-    // Não busca em "filhos" de grupos de opções
-    if (data.children && data.children.length > 0) {
-      var matchedChildren = [];
-      $.each(data.children, function(idx, child) {
-        if (matchCustom(params, child)) {
-          matchedChildren.push(child);
-        }
-      });
-
-      if (matchedChildren.length) {
-        var modifiedData = $.extend({}, data, true);
-        modifiedData.children = matchedChildren;
-        return modifiedData;
-      }
-    } else if (data.text.toUpperCase().indexOf(params.term.toUpperCase()) > -1) {
-      // Corresponde se o termo de busca estiver em qualquer parte do texto
-      return data;
-    }
-
-    // Retorna null se não houver correspondência
     return null;
   }
 
@@ -101,86 +81,46 @@
       <th>Ações</th>
     </tr>
   </thead>
-  <tbody>
-    {% for saida in saidas %}
-    <tr>
-      <td>{{ saida.produto.id }}</td>
-      <td>{{ saida.data | localtime }}</td>
-      <td>{{ saida.produto.nome }}</td>
-      <td>{{ saida.quantidade }}</td>
-      <td>{{ saida.preco_unitario }}</td>
-      <td>{{ saida.total_venda }}</td>
-      <td>{{ saida.forma_pagamento }}</td>
-      <td>{{ saida.cliente }}</td>
-      <td>
-        <div class="d-flex gap-2 align-items-stretch">
-          <form class="w-100">
-            <button type="button" class="btn btn-light btn-sm w-100 h-100 border border-dark"
-              onclick="imprimirNota({{ saida.id }})">🖨️Imprimir</button>
-          </form>
-
-          <form class="w-100">
-            <button type="button" class="btn btn-warning btn-sm w-100 h-100" data-bs-toggle="modal"
-              data-bs-target="#editSaidaModal{{ saida.id }}">
-              Editar
-            </button>
-          </form>
-
-          <form class="w-100" action="{{ url_for('main.delete_saida', id=saida.id) }}" method="post"
-            style="display:inline;"
-            onsubmit="return confirm('Tem certeza que deseja deletar esta saída? Isso afetará o estoque do produto.');">
-            <button type="submit" class="btn btn-danger btn-sm w-100 h-100">Deletar</button>
-          </form>
-        </div>
-      </td>
-    </tr>
-
-    <!-- Modal de Edição -->
-    <div class="modal fade" id="editSaidaModal{{ saida.id }}" tabindex="-1"
-      aria-labelledby="editSaidaModalLabel{{ saida.id }}" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="editSaidaModalLabel{{ saida.id }}">Editar Saída</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <form action="{{ url_for('main.edit_saida', id=saida.id) }}" method="post">
-              <div class="mb-3">
-                <label class="form-label">Produto</label>
-                <input type="text" class="form-control" value="{{ saida.produto.nome }}" readonly>
-              </div>
-              <div class="mb-3">
-                <label for="quantidade" class="form-label">Quantidade</label>
-                <input type="number" class="form-control" name="quantidade" value="{{ saida.quantidade }}" required>
-              </div>
-              <div class="mb-3">
-                <label for="preco_unitario" class="form-label">Preço Unitário</label>
-                <input type="number" step="0.01" class="form-control" name="preco_unitario"
-                  value="{{ saida.preco_unitario }}" required>
-              </div>
-              <div class="mb-3">
-                <label for="forma_pagamento" class="form-label">Forma de Pagamento</label>
-                <input type="text" class="form-control" name="forma_pagamento" value="{{ saida.forma_pagamento }}">
-              </div>
-              <div class="mb-3">
-                <label for="cliente" class="form-label">Cliente</label>
-                <input type="text" class="form-control" name="cliente" value="{{ saida.cliente }}">
-              </div>
-              <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-    {% endfor %}
-    <script>
-      function imprimirNota(saidaId) {
-        const url = `/nota_produto/${saidaId}`;
-        const janela = window.open(url, "_blank", "width=350,height=500");
-        // O próprio template chama window.print() e fecha a janela automaticamente
-      }
-    </script>
+  <tbody id="saida-list">
+    {% include 'partials/_saidas_lista.html' %}
   </tbody>
 </table>
+
+<div id="modal-container">
+    {% include 'partials/_saidas_modals.html' %}
+</div>
+
+{% if pagination.has_next %}
+<div class="text-center my-4">
+    <button id="ver-mais-btn" class="btn btn-secondary" data-next-page="{{ pagination.next_num }}">Ver Mais</button>
+</div>
+{% endif %}
+
+<script>
+function imprimirNota(saidaId) {
+    const url = `/nota_produto/${saidaId}`;
+    const janela = window.open(url, "_blank", "width=350,height=500");
+}
+
+$(document).ready(function() {
+    $('#ver-mais-btn').on('click', function() {
+        var button = $(this);
+        var nextPage = button.data('next-page');
+        var url = `{{ url_for('main.saidas') }}?page=${nextPage}`;
+
+        $.getJSON(url, function(data) {
+            if (data.table_html.trim() !== '') {
+                $('#saida-list').append(data.table_html);
+                $('#modal-container').append(data.modals_html);
+                button.data('next-page', nextPage + 1);
+            }
+
+            if (!data.has_next) {
+                button.hide();
+            }
+        });
+    });
+});
+</script>
+
 {% endblock %}
