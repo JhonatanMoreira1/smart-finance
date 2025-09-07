@@ -3,11 +3,11 @@
 {% block content %}
 <div class="container mt-4">
     <div class="row mb-4">
-        <div class="col-md-12">
+        <div class="col-md-6">
             <div class="card text-white bg-primary mb-3">
-                <div class="card-header"><h2>Saldo Atual do Caixa</h2></div>
+                <div class="card-header d-flex justify-content-between align-items-center fs-4">Saldo Atual do Caixa<button id="toggle-saldo" class="btn btn-lg text-light"></button></div>
                 <div class="card-body">
-                    <h3 class="card-title">R$ {{ saldo_caixa|round(2) }}</h3>
+                    <h4 class="card-title" id="saldo-caixa-valor" data-valor-real="R$ {{ saldo_caixa|round(2) }}">R$ ********</h4>
                 </div>
             </div>
         </div>
@@ -97,6 +97,35 @@
 
 <script>
 $(document).ready(function() {
+    // Script de visibilidade do saldo
+    function setupToggle(buttonId, valueId) {
+        const button = $(buttonId);
+        const valueElement = $(valueId);
+        const realValue = valueElement.data('valor-real');
+        const hiddenValue = 'R$ ********';
+        const eyeIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-eye-fill" viewBox="0 0 16 16"><path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/><path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"/></svg>`;
+        const eyeSlashIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-eye-slash-fill" viewBox="0 0 16 16"><path d="m10.79 12.912-1.614-1.615a3.5 3.5 0 0 1-4.474-4.474l-2.06-2.06C.938 6.278 0 8 0 8s3 5.5 8 5.5a7 7 0 0 0 2.79-.588M5.21 3.088A7 7 0 0 1 8 2.5c5 0 8 5.5 8 5.5s-.939 1.721-2.641 3.238l-2.062-2.062a3.5 3.5 0 0 0-4.474-4.474z"/><path d="M5.525 7.646a2.5 2.5 0 0 0 2.829 2.829zm4.95.708-2.829-2.83a2.5 2.5 0 0 1 2.829 2.829zm3.171 6-12-12 .708-.708 12 12z"/></svg>`;
+        let isVisible = false;
+
+        // Estado inicial
+        valueElement.text(hiddenValue);
+        button.html(eyeSlashIcon);
+
+        button.on('click', function() {
+            isVisible = !isVisible;
+            if (isVisible) {
+                valueElement.text(realValue);
+                button.html(eyeIcon);
+            } else {
+                valueElement.text(hiddenValue);
+                button.html(eyeSlashIcon);
+            }
+        });
+    }
+
+    setupToggle('#toggle-saldo', '#saldo-caixa-valor');
+
+    // Script do "Ver Mais"
     $('#ver-mais-btn').on('click', function() {
         var button = $(this);
         var nextPage = button.data('next-page');
