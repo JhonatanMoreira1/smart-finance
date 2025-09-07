@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash, send_file, Blueprint, jsonify
+from flask import render_template, request, redirect, url_for, flash, send_file, Blueprint
 from sqlalchemy import extract, text, func, case
 from datetime import datetime
 from models import db, Produto, Entrada, Saida, Servico, Caixa
@@ -30,35 +30,21 @@ def produtos():
         return redirect(url_for('main.produtos'))
     
     query = request.args.get('q')
-    produtos_query = Produto.query
     if query:
-        produtos_query = produtos_query.filter(Produto.nome.ilike(f'%{query}%'))
+        produtos_query = Produto.query.filter(Produto.nome.ilike(f'%{query}%'))
     else:
         produtos_query = Produto.query
 
-    total_produtos = produtos_query.count()
-    produtos_paginados = produtos_query.order_by(Produto.nome).limit(20).all()
-    custo_total_estoque = db.session.query(func.sum(Produto.custo * Produto.estoque)).scalar() or 0.0
-    valor_total_estoque = db.session.query(func.sum(Produto.preco_venda * Produto.estoque)).scalar() or 0.0
+    produtos = produtos_query.order_by(Produto.nome).all()
+    
+    custo_total_estoque = sum(p.custo * p.estoque for p in produtos)
+    valor_total_estoque = sum(p.preco_venda * p.estoque for p in produtos)
     
     return render_template('produtos.html', 
-                           produtos=produtos_paginados, 
+                           produtos=produtos, 
                            custo_total_estoque=custo_total_estoque, 
                            valor_total_estoque=valor_total_estoque,
-                           query=query,
-                           total_produtos=total_produtos)
-
-@main_bp.route('/api/produtos')
-@login_required
-def api_produtos():
-    query = request.args.get('q')
-    offset = request.args.get('offset', 20, type=int)
-    produtos_query = Produto.query
-    if query:
-        produtos_query = produtos_query.filter(Produto.nome.ilike(f'%{query}%'))
-    produtos = produtos_query.order_by(Produto.nome).offset(offset).all()
-    produtos_data = [{'id': p.id, 'nome': p.nome, 'tipo': p.tipo, 'preco_venda': p.preco_venda, 'custo': p.custo, 'estoque': p.estoque} for p in produtos]
-    return jsonify(produtos_data)
+                           query=query)
 
 @main_bp.route('/entradas', methods=['GET', 'POST'])
 @login_required
@@ -78,9 +64,7 @@ def entradas():
         flash('Entrada registrada com sucesso!', 'success')
         return redirect(url_for('main.entradas'))
 
-    total_entradas_count = Entrada.query.count()
-    entradas_paginadas = Entrada.query.order_by(Entrada.data.desc()).limit(20).all()
-    todas_as_entradas_para_modais = Entrada.query.order_by(Entrada.data.desc()).all()
+    entradas = Entrada.query.order_by(Entrada.data.desc()).all()
     produtos = Produto.query.all()
     
     mes_atual = datetime.now().month
@@ -90,16 +74,7 @@ def entradas():
         extract('year', Entrada.data) == ano_atual
     ).scalar() or 0
     
-    return render_template('entradas.html', entradas=entradas_paginadas, todas_as_entradas=todas_as_entradas_para_modais, produtos=produtos, valor_gasto_reposicoes=valor_gasto_reposicoes, total_entradas=total_entradas_count)
-
-@main_bp.route('/api/entradas')
-@login_required
-def api_entradas():
-    offset = request.args.get('offset', 0, type=int) 
-    # Adicione .limit(20) aqui
-    entradas = Entrada.query.order_by(Entrada.data.desc()).offset(offset).limit(20).all()
-    data = [{'id': e.id, 'data': e.data.isoformat(), 'produto_nome': e.produto.nome, 'quantidade': e.quantidade, 'custo_unitario': e.custo_unitario, 'total_custo': e.total_custo} for e in entradas]
-    return jsonify(data)
+    return render_template('entradas.html', entradas=entradas, produtos=produtos, valor_gasto_reposicoes=valor_gasto_reposicoes)
 
 @main_bp.route('/saidas', methods=['GET', 'POST'])
 @login_required
@@ -133,20 +108,11 @@ def saidas():
         flash('Saída registrada com sucesso!', 'success')
         return redirect(url_for('main.saidas'))
 
-    total_saidas_count = Saida.query.count()
-    saidas_paginadas = Saida.query.order_by(Saida.data.desc()).limit(20).all()
-    todas_as_saidas_para_modais = Saida.query.order_by(Saida.data.desc()).all()
+    saidas = Saida.query.order_by(Saida.data.desc()).all()
     produtos = Produto.query.all()
-    return render_template('saidas.html', saidas=saidas_paginadas, todas_as_saidas=todas_as_saidas_para_modais, produtos=produtos, total_saidas=total_saidas_count)
+    return render_template('saidas.html', saidas=saidas, produtos=produtos)
 
-@main_bp.route('/api/saidas')
-@login_required
-def api_saidas():
-    offset = request.args.get('offset', 0, type=int) # Mude o padrão para 0
-    # Adicione .limit(20) aqui
-    saidas = Saida.query.order_by(Saida.data.desc()).offset(offset).limit(20).all()
-    data = [{'id': s.id, 'data': s.data.isoformat(), 'produto_nome': s.produto.nome, 'quantidade': s.quantidade, 'preco_unitario': s.preco_unitario, 'total_venda': s.total_venda, 'forma_pagamento': s.forma_pagamento, 'cliente': s.cliente} for s in saidas]
-    return jsonify(data)
+
 
 
 @main_bp.route('/relatorios')
@@ -336,6 +302,7 @@ def get_total_servico(servico):
         return (servico.custo_pecas or 0.0) + (servico.mao_de_obra or 0.0)
     return 0.0
 
+
 @main_bp.route('/servicos', methods=['GET', 'POST'])
 @login_required
 def servicos():
@@ -382,19 +349,8 @@ def servicos():
         flash('Serviço adicionado com sucesso!', 'success')
         return redirect(url_for('main.servicos'))
 
-    total_servicos_count = Servico.query.count()
-    servicos_paginados = Servico.query.order_by(Servico.data_hora.desc()).limit(20).all()
-    todos_os_servicos_para_modais = Servico.query.order_by(Servico.data_hora.desc()).all()
-    return render_template('servicos.html', servicos=servicos_paginados, todos_os_servicos=todos_os_servicos_para_modais, total_servicos=total_servicos_count)
-
-@main_bp.route('/api/servicos')
-@login_required
-def api_servicos():
-    offset = request.args.get('offset', 0, type=int) # Mude o padrão para 0
-    # Adicione .limit(20) aqui
-    servicos = Servico.query.order_by(Servico.data_hora.desc()).offset(offset).limit(20).all()
-    data = [{'id': s.id, 'data_hora': s.data_hora.isoformat(), 'servico_descricao': s.servico_descricao.replace("[REVENDA]", "").strip(), 'aparelho': s.aparelho, 'tipo': s.tipo, 'status': s.status, 'custo_pecas': s.custo_pecas, 'mao_de_obra': s.mao_de_obra, 'preco_aparelho': s.preco_aparelho, 'forma_pagamento': s.forma_pagamento, 'cliente': s.cliente} for s in servicos]
-    return jsonify(data)
+    servicos = Servico.query.order_by(Servico.data_hora.desc()).all()
+    return render_template('servicos.html', servicos=servicos)
 
 
 @main_bp.route('/caixa', methods=['GET', 'POST'])
@@ -413,23 +369,11 @@ def caixa():
         flash(f'{tipo.capitalize()} registrada com sucesso!', 'success')
         return redirect(url_for('main.caixa'))
 
-    total_transacoes = Caixa.query.count()
-    transacoes_paginadas = Caixa.query.order_by(Caixa.data.desc()).limit(20).all()
-    todas_transacoes_para_modais = Caixa.query.order_by(Caixa.data.desc()).all() # Para futuros modais
-
+    transacoes = Caixa.query.order_by(Caixa.data.desc()).all()
     total_entradas = db.session.query(func.sum(Caixa.valor)).filter(Caixa.tipo == 'Entrada').scalar() or 0.0
     total_retiradas = db.session.query(func.sum(Caixa.valor)).filter(Caixa.tipo == 'Retirada').scalar() or 0.0
     saldo_caixa = total_entradas - total_retiradas
-
-    return render_template('caixa.html', transacoes=transacoes_paginadas, todas_transacoes=todas_transacoes_para_modais, saldo_caixa=saldo_caixa, total_transacoes=total_transacoes)
-
-@main_bp.route('/api/caixa')
-@login_required
-def api_caixa():
-    offset = request.args.get('offset', 20, type=int)
-    transacoes = Caixa.query.order_by(Caixa.data.desc()).offset(offset).all()
-    data = [{'id': t.id, 'data': t.data.isoformat(), 'tipo': t.tipo, 'descricao': t.descricao, 'valor': t.valor, 'origem_tipo': t.origem_tipo} for t in transacoes]
-    return jsonify(data)
+    return render_template('caixa.html', transacoes=transacoes, saldo_caixa=saldo_caixa)
 
 @main_bp.route('/caixa/delete/<int:id>', methods=['POST'])
 @login_required
@@ -588,61 +532,6 @@ def delete_servico(id):
     db.session.commit()
     flash('Serviço deletado com sucesso!', 'success')
     return redirect(url_for('main.servicos'))
-
-
-
-@main_bp.route('/api/produto/<int:id>')
-@login_required
-def api_get_produto(id):
-    produto = Produto.query.get_or_404(id)
-    return jsonify({
-        'id': produto.id,
-        'nome': produto.nome,
-        'preco_venda': produto.preco_venda,
-        'custo': produto.custo,
-        'estoque': produto.estoque
-    })
-
-@main_bp.route('/api/entrada/<int:id>')
-@login_required
-def api_get_entrada(id):
-    entrada = Entrada.query.get_or_404(id)
-    return jsonify({
-        'id': entrada.id,
-        'produto_id': entrada.produto_id,
-        'quantidade': entrada.quantidade,
-        'custo_unitario': entrada.custo_unitario
-    })
-
-@main_bp.route('/api/saida/<int:id>')
-@login_required
-def api_get_saida(id):
-    saida = Saida.query.get_or_404(id)
-    return jsonify({
-        'id': saida.id,
-        'produto_id': saida.produto_id,
-        'quantidade': saida.quantidade,
-        'preco_unitario': saida.preco_unitario,
-        'forma_pagamento': saida.forma_pagamento,
-        'cliente': saida.cliente
-    })
-
-@main_bp.route('/api/servico/<int:id>')
-@login_required
-def api_get_servico(id):
-    servico = Servico.query.get_or_404(id)
-    return jsonify({
-        'id': servico.id,
-        'servico_descricao': servico.servico_descricao.replace('[REVENDA]', '').strip(),
-        'aparelho': servico.aparelho,
-        'tipo': servico.tipo,
-        'custo_pecas': servico.custo_pecas,
-        'mao_de_obra': servico.mao_de_obra,
-        'preco_aparelho': servico.preco_aparelho,
-        'status': servico.status,
-        'forma_pagamento': servico.forma_pagamento,
-        'cliente': servico.cliente
-    })
 
 
 @main_bp.route('/backup', methods=['GET'])

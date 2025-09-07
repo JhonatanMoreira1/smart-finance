@@ -6,7 +6,7 @@
 <form class="row g-3 mb-4">
   <div class="col-md-3">
     <label for="dia" class="form-label">Dia</label>
-    <input type="number" class="form-control" id="dia" name="dia" min="1" max="31" value="{{ dia or '' }}"
+    <input type="number" class="form-control" id="dia" name="dia" min="1" max="31" value="{{ dia or now.day }}"
       placeholder="{{ now.day }}" {% if mes_inteiro %}disabled{% endif %}>
     <div class="form-check mt-2">
       <input class="form-check-input" type="checkbox" id="mes_inteiro" name="mes_inteiro" {% if mes_inteiro %}checked{%
@@ -77,6 +77,32 @@
 </div>
 
 <hr>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const mesInteiro = document.getElementById('mes_inteiro');
+    const dia = document.getElementById('dia');
+
+    // Captura o dia atual ao carregar a página
+    const hoje = new Date().getDate();
+
+    function toggleDia() {
+      if (mesInteiro.checked) {
+        dia.disabled = true;
+        dia.value = '';
+      } else {
+        dia.disabled = false;
+        // Só insere o dia se estiver vazio
+        if (!dia.value) {
+          dia.value = hoje;
+        }
+      }
+    }
+
+    mesInteiro.addEventListener('change', toggleDia);
+    toggleDia(); // executa no carregamento
+  });
+</script>
 
 <h2>Relatórios de Produtos</h2>
 <div class="row">

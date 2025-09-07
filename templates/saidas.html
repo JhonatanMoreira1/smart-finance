@@ -59,7 +59,7 @@
     // Não busca em "filhos" de grupos de opções
     if (data.children && data.children.length > 0) {
       var matchedChildren = [];
-      $.each(data.children, function (idx, child) {
+      $.each(data.children, function(idx, child) {
         if (matchCustom(params, child)) {
           matchedChildren.push(child);
         }
@@ -101,7 +101,7 @@
       <th>Ações</th>
     </tr>
   </thead>
-  <tbody id="saidas-table-body">
+  <tbody>
     {% for saida in saidas %}
     <tr>
       <td>{{ saida.produto.id }}</td>
@@ -174,81 +174,13 @@
       </div>
     </div>
     {% endfor %}
+    <script>
+      function imprimirNota(saidaId) {
+        const url = `/nota_produto/${saidaId}`;
+        const janela = window.open(url, "_blank", "width=350,height=500");
+        // O próprio template chama window.print() e fecha a janela automaticamente
+      }
+    </script>
   </tbody>
 </table>
-<script>
-  function imprimirNota(saidaId) {
-    const url = `/nota_produto/${saidaId}`;
-    const janela = window.open(url, "_blank", "width=350,height=500");
-  }
-</script>
-
-<div class="text-center my-4">
-  {% if total_saidas > 20 %}
-  <button id="ver-mais-saidas-btn" class="btn btn-secondary">Ver mais</button>
-  {% endif %}
-</div>
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    const verMaisBtn = document.getElementById('ver-mais-saidas-btn');
-    if (verMaisBtn) {
-      verMaisBtn.addEventListener('click', function () {
-        const tbody = document.getElementById('saidas-table-body');
-        const currentOffset = tbody.children.length;
-
-        fetch(`/api/saidas?offset=${currentOffset}`)
-          .then(response => response.json())
-          .then(data => {
-            if (data.length > 0) {
-              data.forEach(saida => {
-                const row = document.createElement('tr');
-
-                const dataFormatada = new Date(saida.data).toLocaleString('pt-BR', {
-                  day: '2-digit', month: '2-digit', year: 'numeric',
-                  hour: '2-digit', minute: '2-digit'
-                });
-
-                // Use esta estrutura HTML completa para a nova linha
-                row.innerHTML = `
-                    <td>${saida.id}</td>
-                    <td>${dataFormatada}</td>
-                    <td>${saida.produto_nome}</td>
-                    <td>${saida.quantidade}</td>
-                    <td>R$ ${saida.preco_unitario.toFixed(2)}</td>
-                    <td>R$ ${saida.total_venda.toFixed(2)}</td>
-                    <td>${saida.forma_pagamento || ''}</td>
-                    <td>${saida.cliente || ''}</td>
-                    <td>
-                        <div class="d-flex gap-2 align-items-stretch">
-                            <form class="w-100">
-                                <button type="button" class="btn btn-light btn-sm w-100 h-100 border border-dark" onclick="imprimirNota(${saida.id})">
-                                    🖨️Imprimir
-                                </button>
-                            </form>
-                            <form class="w-100">
-                                <button type="button" class="btn btn-warning btn-sm w-100 h-100" data-bs-toggle="modal" data-bs-target="#editSaidaModal${saida.id}">
-                                    Editar
-                                </button>
-                            </form>
-                            <form class="w-100" action="/delete_saida/${saida.id}" method="post" onsubmit="return confirm('Tem certeza que deseja deletar esta saída? Isso afetará o estoque do produto.');">
-                                <button type="submit" class="btn btn-danger btn-sm w-100 h-100">
-                                    Deletar
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                `;
-                tbody.appendChild(row);
-              });
-            }
-
-            if (data.length < 20) {
-              verMaisBtn.style.display = 'none';
-            }
-          });
-      });
-    }
-  });
-
-</script>
 {% endblock %}

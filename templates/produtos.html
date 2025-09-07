@@ -5,12 +5,12 @@
 
 <div class="container mt-4">
   <form method="GET" action="{{ url_for('main.produtos') }}" class="row g-3 mb-4">
-    <div class="col-md-10">
-      <input type="text" name="q" class="form-control" placeholder="Pesquisar produtos..." value="{{ query or '' }}">
-    </div>
-    <div class="col-md-2">
-      <button type="submit" class="btn btn-primary w-100">Pesquisar</button>
-    </div>
+      <div class="col-md-10">
+          <input type="text" name="q" class="form-control" placeholder="Pesquisar produtos..." value="{{ query or '' }}">
+      </div>
+      <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100">Pesquisar</button>
+      </div>
   </form>
 </div>
 
@@ -83,7 +83,7 @@
       <th>Ações</th>
     </tr>
   </thead>
-  <tbody id="produtos-table-body">
+  <tbody>
     {% for produto in produtos %}
     <tr>
       <td>{{ produto.id }}</td>
@@ -93,131 +93,52 @@
       <td>{{ produto.custo }}</td>
       <td>{{ produto.estoque }}</td>
       <td>
-        <div class="d-flex gap-2 align-items-stretch">
-          <form class="w-100">
-            <!-- ALTERE ESTE BOTÃO -->
-            <!-- Remova data-bs-toggle e data-bs-target -->
-            <!-- Adicione onclick="openEditModal({{ produto.id }})" -->
-            <button type="button" class="btn btn-warning btn-sm w-100 h-100" onclick="openEditModal({{ produto.id }})">
-              Editar
-            </button>
-          </form>
-          <form class="w-100" action="{{ url_for('main.delete_produto', id=produto.id) }}" method="post"
-            onsubmit="return confirm('Tem certeza?');">
-            <button type="submit" class="btn btn-danger btn-sm w-100 h-100">Deletar</button>
-          </form>
-        </div>
+        <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal"
+          data-bs-target="#editProdutoModal{{ produto.id }}">
+          Editar
+        </button>
+        <form action="{{ url_for('main.delete_produto', id=produto.id) }}" method="post" style="display:inline;"
+          onsubmit="return confirm('Tem certeza que deseja deletar este produto?');">
+          <button type="submit" class="btn btn-danger btn-sm">Deletar</button>
+        </form>
       </td>
     </tr>
+
+    <!-- Modal de Edição -->
+    <div class="modal fade" id="editProdutoModal{{ produto.id }}" tabindex="-1"
+      aria-labelledby="editProdutoModalLabel{{ produto.id }}" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editProdutoModalLabel{{ produto.id }}">Editar Produto</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form action="{{ url_for('main.edit_product', id=produto.id) }}" method="post">
+              <div class="mb-3">
+                <label for="nome" class="form-label">Nome</label>
+                <input type="text" class="form-control" name="nome" value="{{ produto.nome }}" required>
+              </div>
+              <div class="mb-3">
+                <label for="preco_venda" class="form-label">Preço de Venda</label>
+                <input type="number" step="0.01" class="form-control" name="preco_venda"
+                  value="{{ produto.preco_venda }}" required>
+              </div>
+              <div class="mb-3">
+                <label for="custo" class="form-label">Custo</label>
+                <input type="number" step="0.01" class="form-control" name="custo" value="{{ produto.custo }}" required>
+              </div>
+              <div class="mb-3">
+                <label for="estoque" class="form-label">Estoque</label>
+                <input type="number" class="form-control" name="estoque" value="{{ produto.estoque }}" required>
+              </div>
+              <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
     {% endfor %}
   </tbody>
 </table>
-
-<div class="text-center my-4">
-  {% if total_produtos > 20 %}
-  <button id="ver-mais-btn" class="btn btn-secondary">Ver mais</button>
-  {% endif %}
-</div>
-
-<!-- Modal de Edição Genérico -->
-<div class="modal fade" id="genericEditProdutoModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Editar Produto</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <form id="editProdutoForm" method="post">
-          <div class="mb-3">
-            <label for="edit_nome" class="form-label">Nome</label>
-            <input type="text" class="form-control" id="edit_nome" name="nome" required>
-          </div>
-          <div class="mb-3">
-            <label for="edit_preco_venda" class="form-label">Preço de Venda</label>
-            <input type="number" step="0.01" class="form-control" id="edit_preco_venda" name="preco_venda" required>
-          </div>
-          <div class="mb-3">
-            <label for="edit_custo" class="form-label">Custo</label>
-            <input type="number" step="0.01" class="form-control" id="edit_custo" name="custo" required>
-          </div>
-          <div class="mb-3">
-            <label for="edit_estoque" class="form-label">Estoque</label>
-            <input type="number" class="form-control" id="edit_estoque" name="estoque" required>
-          </div>
-          <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- SCRIPT MOVIDO PARA FORA DO MODAL E SINTAXE CORRIGIDA -->
-<script>
-  function openEditModal(produtoId) {
-    fetch(`/api/produto/${produtoId}`)
-      .then(response => response.json())
-      .then(data => {
-        const form = document.getElementById('editProdutoForm');
-        form.action = `/edit_product/${produtoId}`;
-        document.getElementById('edit_nome').value = data.nome;
-        document.getElementById('edit_preco_venda').value = data.preco_venda;
-        document.getElementById('edit_custo').value = data.custo;
-        document.getElementById('edit_estoque').value = data.estoque;
-
-        const editModal = new bootstrap.Modal(document.getElementById('genericEditProdutoModal'));
-        editModal.show();
-      });
-  }
-
-  document.addEventListener('DOMContentLoaded', function () {
-    const verMaisBtn = document.getElementById('ver-mais-btn');
-
-    // SINTAXE CORRIGIDA: Declaração em uma linha com ponto e vírgula
-    const totalProdutos = {{ total_produtos }};
-
-  if (verMaisBtn) {
-    verMaisBtn.addEventListener('click', function () {
-      const tbody = document.getElementById('produtos-table-body');
-      const currentOffset = tbody.children.length;
-      const currentQuery = new URLSearchParams(window.location.search).get('q') || '';
-
-      fetch(`/api/produtos?offset=${currentOffset}&q=${currentQuery}`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.length > 0) {
-            data.forEach(produto => {
-              const row = document.createElement('tr');
-              row.innerHTML = `
-                    <td>${produto.id}</td>
-                    <td>${produto.nome}</td>
-                    <td>${produto.tipo}</td>
-                    <td>R$ ${produto.preco_venda.toFixed(2)}</td>
-                    <td>R$ ${produto.custo.toFixed(2)}</td>
-                    <td>${produto.estoque}</td>
-                    <td>
-                        <div class="d-flex gap-2 align-items-stretch">
-                            <form class="w-100">
-                                <button type="button" class="btn btn-warning btn-sm w-100 h-100" onclick="openEditModal(${produto.id})">
-                                    Editar
-                                </button>
-                            </form>
-                            <form class="w-100" action="/delete_produto/${produto.id}" method="post" onsubmit="return confirm('Tem certeza?');">
-                                <button type="submit" class="btn btn-danger btn-sm w-100 h-100">Deletar</button>
-                            </form>
-                        </div>
-                    </td>
-                `;
-              tbody.appendChild(row);
-            });
-          }
-
-          if (tbody.children.length >= totalProdutos) {
-            verMaisBtn.style.display = 'none';
-          }
-        });
-    });
-  }
-  });
-</script>
 {% endblock %}

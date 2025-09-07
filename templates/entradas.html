@@ -62,7 +62,7 @@
     // Não busca em "filhos" de grupos de opções
     if (data.children && data.children.length > 0) {
       var matchedChildren = [];
-      $.each(data.children, function (idx, child) {
+      $.each(data.children, function(idx, child) {
         if (matchCustom(params, child)) {
           matchedChildren.push(child);
         }
@@ -83,10 +83,10 @@
   }
 
   $('#addEntradaModal').on('shown.bs.modal', function () {
-    $('#produto_id_entrada').select2({
-      dropdownParent: $('#addEntradaModal'),
-      matcher: matchCustom
-    });
+      $('#produto_id_entrada').select2({
+          dropdownParent: $('#addEntradaModal'),
+          matcher: matchCustom
+      });
   });
 </script>
 
@@ -102,7 +102,7 @@
       <th>Ações</th>
     </tr>
   </thead>
-  <tbody id="entradas-table-body">
+  <tbody>
     {% for entrada in entradas %}
     <tr>
       <td>{{ entrada.produto.id }}</td>
@@ -112,20 +112,17 @@
       <td>{{ entrada.custo_unitario }}</td>
       <td>{{ entrada.total_custo }}</td>
       <td>
-        <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal"
-          data-bs-target="#editEntradaModal{{ entrada.id }}">
+        <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editEntradaModal{{ entrada.id }}">
           Editar
         </button>
-        <form action="{{ url_for('main.delete_entrada', id=entrada.id) }}" method="post" style="display:inline;"
-          onsubmit="return confirm('Tem certeza que deseja deletar esta entrada? Isso afetará o estoque do produto.');">
+        <form action="{{ url_for('main.delete_entrada', id=entrada.id) }}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja deletar esta entrada? Isso afetará o estoque do produto.');">
           <button type="submit" class="btn btn-danger btn-sm">Deletar</button>
         </form>
       </td>
     </tr>
 
     <!-- Modal de Edição -->
-    <div class="modal fade" id="editEntradaModal{{ entrada.id }}" tabindex="-1"
-      aria-labelledby="editEntradaModalLabel{{ entrada.id }}" aria-hidden="true">
+    <div class="modal fade" id="editEntradaModal{{ entrada.id }}" tabindex="-1" aria-labelledby="editEntradaModalLabel{{ entrada.id }}" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -144,8 +141,7 @@
               </div>
               <div class="mb-3">
                 <label for="custo_unitario" class="form-label">Custo Unitário</label>
-                <input type="number" step="0.01" class="form-control" name="custo_unitario"
-                  value="{{ entrada.custo_unitario }}" required>
+                <input type="number" step="0.01" class="form-control" name="custo_unitario" value="{{ entrada.custo_unitario }}" required>
               </div>
               <button type="submit" class="btn btn-primary">Salvar Alterações</button>
             </form>
@@ -156,59 +152,4 @@
     {% endfor %}
   </tbody>
 </table>
-<div class="text-center my-4">
-  {% if total_entradas > 20 %}
-  <button id="ver-mais-entradas-btn" class="btn btn-secondary">Ver mais</button>
-  {% endif %}
-</div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    const verMaisBtn = document.getElementById('ver-mais-entradas-btn');
-    if (verMaisBtn) {
-      verMaisBtn.addEventListener('click', function () {
-        const tbody = document.getElementById('entradas-table-body');
-        const currentOffset = tbody.children.length;
-
-        fetch(`/api/entradas?offset=${currentOffset}`)
-          .then(response => response.json())
-          .then(data => {
-            if (data.length > 0) {
-              data.forEach(entrada => {
-                const row = document.createElement('tr');
-
-                // Formata a data para um formato legível
-                const dataFormatada = new Date(entrada.data).toLocaleString('pt-BR', {
-                  day: '2-digit', month: '2-digit', year: 'numeric',
-                  hour: '2-digit', minute: '2-digit'
-                });
-
-                // Constrói o HTML da nova linha
-                row.innerHTML = `
-                                <td>${entrada.id}</td>
-                                <td>${dataFormatada}</td>
-                                <td>${entrada.produto_nome}</td>
-                                <td>${entrada.quantidade}</td>
-                                <td>R$ ${entrada.custo_unitario.toFixed(2)}</td>
-                                <td>R$ ${entrada.total_custo.toFixed(2)}</td>
-                                <td>
-                                    <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editEntradaModal${entrada.id}">Editar</button>
-                                    <form action="/delete_entrada/${entrada.id}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza?');">
-                                        <button type="submit" class="btn btn-danger btn-sm">Deletar</button>
-                                    </form>
-                                </td>
-                            `;
-                tbody.appendChild(row);
-              });
-            }
-
-            // Esconde o botão se a API retornar menos de 20 itens (ou seja, chegou ao fim)
-            if (data.length < 20) {
-              verMaisBtn.style.display = 'none';
-            }
-          });
-      });
-    }
-  });
-</script>
 {% endblock %}
