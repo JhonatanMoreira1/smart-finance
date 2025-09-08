@@ -1,6 +1,6 @@
 # Smart Finance - Gestão para Assistências Técnicas
 
-<p align="center">
+<p align="left">
   <img src="/static/favicon.ico" alt="Smart Finance Logo" width="200">
 </p>
 
