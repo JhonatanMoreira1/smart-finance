@@ -511,6 +511,7 @@ def edit_saida(id):
     produto = Produto.query.get(saida.produto_id)
 
     quantidade_antiga = saida.quantidade
+    forma_pagamento_antiga = saida.forma_pagamento
     quantidade_nova = int(request.form['quantidade'])
     produto.estoque = produto.estoque + quantidade_antiga - quantidade_nova
 
